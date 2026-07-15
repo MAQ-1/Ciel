@@ -2,8 +2,10 @@ import redis from "../../shared/redis/redis.js";
 
 // retrieving userd data current user
 const protect = async(req,res,next)=>{
-  try{
+  try{ 
+        
        const sessionId=req.cookies?.session;
+        
        
        if(!sessionId){
         return res.status(401).json({message:"Unauthorized"})
@@ -11,7 +13,7 @@ const protect = async(req,res,next)=>{
       
        // Session Id milgyi ab redis se session nikal lo
       const session= await redis.get(`session:${sessionId}`)
-    
+      
       if(!session){
         return res.status(401).json({message:"session expired"})
       }

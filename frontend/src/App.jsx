@@ -2,16 +2,20 @@ import React from 'react'
 import Home from './pages/Home'
 import { useEffect } from 'react'
 import getCurrentUser from './features/getCurrentUser.js'
-
+import {useDispatch} from 'react-redux'
+import {setUserData} from './redux/userSlice.js'
 
 function App() {
- 
-  useEffect(()=>{
-    const fetchCurrentUser=async()=>{
-     await getCurrentUser()
-    }
-    fetchCurrentUser()
-  },[])
+    
+  const dispatch = useDispatch()
+// current user data fetching and storing in reducer slice 
+      useEffect(()=>{
+        const fetchCurrentUser=async()=>{
+        const data= await getCurrentUser()
+        dispatch(setUserData(data))
+        }
+        fetchCurrentUser()
+      },[dispatch])
   
   return (
    <>
