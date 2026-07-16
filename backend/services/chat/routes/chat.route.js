@@ -3,7 +3,7 @@ import{saveMessage,getMessages,createConversation,getConversation,updateConversa
 const router=express.Router();
 
 // create conversation api
-router.get("/conversations", getConversation);
+router.get("/create-conversation", createConversation);
 
 // get conversation api
 router.get("/get-conversations",getConversation);

@@ -31,7 +31,7 @@ try{
       console.log(userId);
       
     // finding all conversation in db
-      const conversations = await Conversation.findOne({
+      const conversations = await Conversation.find({
         userId:userId,
       }).sort({updatedAt:-1}) // sorting by updatedAt in descending order to get the latest conversation
     

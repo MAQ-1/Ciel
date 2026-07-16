@@ -6,7 +6,9 @@ import { FcGoogle } from "react-icons/fc";
 import Button from '../ui/Button.jsx';
 import {useDispatch,useSelector} from 'react-redux'
 import {setUserData} from '../redux/userSlice.js'
-
+import SideBar from '../component/SideBar.jsx';
+import ChatArea from '../component/ChatArea.jsx';
+import Artifact from '../component/Artifact.jsx';
 
 function Home() {
 
@@ -46,7 +48,6 @@ function Home() {
   return (
     <div className="h-screen flex bg-[#0d0f14] text-white overflow-hidden">
      
-
      {/* login popup */}
      {!userData && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
               {/* Main card Div */}
@@ -75,6 +76,10 @@ function Home() {
 
                   </div>
           </div>}
+
+          <SideBar/>
+          <ChatArea/>
+          <Artifact/>
           
     </div>
   )

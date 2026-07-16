@@ -2,9 +2,10 @@ import { ChatGroq } from "@langchain/groq"
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
 
 // chatAgent  Model
+
 const groq = new ChatGroq({
     model: "openai/gpt-oss-120b",
-    apikey: process.env.GROQ_API_KEY,
+    apiKey:process.env.GROQ_API_KEY,
     temperature: 0,
     maxTokens: undefined,
     maxRetries: 2,
@@ -13,7 +14,7 @@ const groq = new ChatGroq({
 
 const gemini= new ChatGoogleGenerativeAI({
     model: "gemini-2.5-pro",
-    apikey: process.env.GOOGLE_API_KEY,
+    apiKey:process.env.GOOGLE_API_KEY,
     temperature: 0,
     maxRetries: 2,
     // other params...

@@ -1,9 +1,11 @@
 import React from 'react'
 import Home from './pages/Home'
+
 import { useEffect } from 'react'
 import getCurrentUser from './features/getCurrentUser.js'
 import {useDispatch} from 'react-redux'
 import {setUserData} from './redux/userSlice.js'
+import { Routes, Route } from "react-router-dom";
 
 function App() {
     
@@ -19,7 +21,7 @@ function App() {
   
   return (
    <>
-     <Home />
+    <Home/>
    </>
   )
 }

@@ -1,7 +1,7 @@
-import {getModel} from "../db/mongo.js"
+import {getModel} from "../config/llmModels.js";
 
 export const router= async(state)=>{
-  const llm=getModel("router")
+  const llm=await getModel("router")
   
   const prompt = `
 You are an AI Router responsible for selecting the most appropriate agent for a user's request.
@@ -9,11 +9,6 @@ You are an AI Router responsible for selecting the most appropriate agent for a 
 Your ONLY task is to choose the correct agent.
 Do NOT answer the user's request.
 Do NOT explain your reasoning.
-Return ONLY valid JSON in the following format:
-
-{
-  "agent": "<AGENT_NAME>"
-}
 
 Available agents:
 
@@ -43,7 +38,23 @@ Routing Rules:
 - If the request is about image generation, editing, or analysis, route to IMAGE.
 - Otherwise, route to CHAT.
 
-Return ONLY the JSON object and nothing else.
+Return ONLY one word.
+chat 
+search
+coding
+pdf
+ppt
+vision
+
+User Query:
+${state.prompt}
 `;
+
+const response = await llm.invoke(prompt);
+
+return{
+  ...state,
+  agent:response.content.trim().toLowerCase()
+}
 
 }
