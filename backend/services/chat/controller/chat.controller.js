@@ -14,6 +14,7 @@ export const createConversation=async(req,res)=>{
       const conversation = await Conversation.create({
         userId:userId,
       })
+      console.log("Found conversations:", conversation);
     
       return res.status(201).json({message:"conversation created",conversation})
     }catch(error){

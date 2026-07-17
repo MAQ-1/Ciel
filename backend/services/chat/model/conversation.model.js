@@ -6,7 +6,7 @@ const conversationSchema= new mongoose.Schema({
         type:String,
         default:"New Chat"
     },
-    userID:{
+    userId:{
         type:String,
     }
     

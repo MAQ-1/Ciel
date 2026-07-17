@@ -23,7 +23,7 @@ function Home() {
      const handlelogin=async(token)=>{
         try{
             const{data}=await api.post("/api/auth/login",{token})
-            dispatch(setUserData(data))
+            dispatch(setUserData(data.user))
         }catch(error){
         console.error("Error logging in", error)
         }
@@ -47,7 +47,9 @@ function Home() {
 
   return (
     <div className="h-screen flex bg-[#0d0f14] text-white overflow-hidden">
-     
+      
+        <SideBar/>
+          <ChatArea/>
      {/* login popup */}
      {!userData && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
               {/* Main card Div */}
@@ -77,8 +79,7 @@ function Home() {
                   </div>
           </div>}
 
-          <SideBar/>
-          <ChatArea/>
+        
           <Artifact/>
           
     </div>
