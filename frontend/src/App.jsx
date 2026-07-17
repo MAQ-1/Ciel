@@ -1,29 +1,50 @@
-import React from 'react'
-import Home from './pages/Home'
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
-import { useEffect } from 'react'
-import getCurrentUser from './features/getCurrentUser.js'
-import {useDispatch} from 'react-redux'
-import {setUserData} from './redux/userSlice.js'
-import { Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import getCurrentUser from "./features/getCurrentUser";
+
+import {
+  setUserData,
+  setLoading,
+} from "./redux/userSlice";
 
 function App() {
-    
-  const dispatch = useDispatch()
-// current user data fetching and storing in reducer slice 
-      useEffect(()=>{
-        const fetchCurrentUser=async()=>{
-        const data= await getCurrentUser()
-        dispatch(setUserData(data.user))
-        }
-        fetchCurrentUser()
-      },[dispatch])
-  
-  return (
-   <>
-    <Home/>
-   </>
-  )
+
+  const dispatch = useDispatch();
+  const loading = useSelector(state => state.user.loading);
+
+  useEffect(() => {
+
+    const fetchCurrentUser = async () => {
+
+      try {
+
+        const data = await getCurrentUser();
+
+        dispatch(setUserData(data?.user ?? null));
+
+      } finally {
+
+        dispatch(setLoading(false));
+
+      }
+
+    };
+
+    fetchCurrentUser();
+
+  }, [dispatch]);
+
+  if (loading) {
+    return (
+      <div className="h-screen bg-black flex items-center justify-center">
+        <div className="h-10 w-10 rounded-full border-4 border-white/20 border-t-white animate-spin"></div>
+      </div>
+    );
+  }
+
+  return <Home />;
 }
 
-export default App
+export default App;

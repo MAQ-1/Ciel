@@ -14,6 +14,6 @@ router.post("/update-conversations", updateConversation);
 // send message api
 router.post("/messages",saveMessage);
 // get messages api
-router.get("/messages/:conversationId",getMessages);
+router.get("/get-messages/:conversationId",getMessages);
 
 export default router;
