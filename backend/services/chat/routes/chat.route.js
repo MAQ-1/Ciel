@@ -12,7 +12,7 @@ router.get("/get-conversations",getConversation);
 router.post("/update-conversations", updateConversation);
 
 // send message api
-router.post("/messages",saveMessage);
+router.post("/save-message",saveMessage);
 // get messages api
 router.get("/get-messages/:conversationId",getMessages);
 

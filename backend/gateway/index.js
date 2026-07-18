@@ -7,10 +7,12 @@ import protect from "./middleware/auth.middleware.js";
 import getCurrentUser from "./controller/user.controller.js";
 import proxyWithHeader from "./utils/proxywithHeader.js";
 dotenv.config();
+import morgan from "morgan";
 
 const PORT=process.env.PORT ;
 const app=express();
 
+app.use(morgan("dev"));
 app.use(cors({
     origin: process.env.FRONTEND_URL,
     credentials: true,

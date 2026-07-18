@@ -105,7 +105,7 @@ export const getMessages=async(req,res)=>{
         // find the messages in db
         const messages=await Message.find({
             conversationId
-        }).sort({updatedAt:1}) // sorting by updatedAt in ascending order to get the messages in order
+        }) // sorting by updatedAt in ascending order to get the messages in order
 
         return res.status(200).json({message:"messages found",messages})
 

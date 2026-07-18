@@ -1,5 +1,5 @@
 import React from 'react'
-import { PanelLeftIcon, PenSquare, Plus, MessageSquare, Coins, LogOut,PanelRight } from "lucide-react";
+import { PanelLeftIcon, PenSquare, Plus, MessageSquare, Coins, LogOut, PanelRight } from "lucide-react";
 import { useEffect, useState } from 'react'
 import { getConversation } from '../features/getConversation.js'
 import { useDispatch } from 'react-redux'
@@ -16,7 +16,7 @@ import { useRef } from 'react';
 
 
 
-function SideBar() {
+function SideBar({ sidebarOpen, setSidebarOpen }) {
   const [collapsed, setCollapsed] = React.useState(false)
   const dispatch = useDispatch();
   const { conversations, selectedConversation } = useSelector((state) => state.conversation);
@@ -31,7 +31,7 @@ function SideBar() {
   useEffect(() => {
     const getConv = async () => {
       const data = await getConversation();
-      console.log(data);
+      // console.log(data);
 
       dispatch(setConversation(data.conversations))
     }
@@ -50,7 +50,7 @@ function SideBar() {
   // Side bar open and collapsed
   if (collapsed) {
     return (
-      <div className="hidden lg:flex flex-col items-center w-14 h-screen bg-[#0d0f14] border-r border-white/[0.06] py-4 gap-1 shrink-0">
+      <div className="hidden md:flex flex-col items-center w-14 h-screen bg-[#0d0f14] border-r border-white/[0.06] py-4 gap-1 shrink-0">
         <button
           className="flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent border-none cursor-pointer mb-1"
           onClick={() => setCollapsed(false)}
@@ -59,8 +59,8 @@ function SideBar() {
         </button>
 
         <button className="flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 bg-transparent border-none cursor-pointer"
-        onClick={handleCreateConversation}>
-            <Plus/>
+          onClick={handleCreateConversation}>
+          <Plus />
         </button>
 
 
@@ -73,7 +73,12 @@ function SideBar() {
             return (
               <div
                 key={conv._id}
-                onClick={() => dispatch(setSelectedConversation(conv))}
+
+                onClick={() => {
+                  // console.log("Clicked:", conv);
+                      // console.log("Clicked conversation:", conv);
+                  dispatch(setSelectedConversation(conv));
+                }}
                 className={`flex items-center gap-2.5 cursor-pointer
                                     mb-1 px-3 py-2.5 rounded-[10px] border
                                     transition-all duration-200 ease-in-out
@@ -95,7 +100,7 @@ function SideBar() {
                   <MessageSquare size={18} />
                 </div>
 
-               
+
               </div>
             );
           })}
@@ -103,26 +108,26 @@ function SideBar() {
 
 
         {/* image */}
-          
-           <div className="relative shrink-0">
-                  {userData?.avatar && !imageError ? (
-                    <img
-                      key={avatarRef.current}
-                      src={`${userData.avatar}?${Date.now()}`}
-                      alt="Profile"
-                      className="w-9 h-9 rounded-[10px] object-cover border-2 border-indigo-500/25"
-                      onLoad={() => console.log("✅ Image Loaded")}
-                      onError={(e) => {
 
-                        setimageError(true);
-                      }}
-                    />
-                  ) : (
-                    <div className="w-9 h-9 rounded-[10px] border-2 border-indigo-500/25 flex items-center justify-center">
-                      <User size={18} className="text-slate-400" />
-                    </div>
-                  )}
+        <div className="relative shrink-0">
+          {userData?.avatar && !imageError ? (
+            <img
+              key={avatarRef.current}
+              src={`${userData.avatar}?${Date.now()}`}
+              alt="Profile"
+              className="w-9 h-9 rounded-[10px] object-cover border-2 border-indigo-500/25"
+              // onLoad={() => console.log("✅ Image Loaded")}
+              onError={(e) => {
+
+                setimageError(true);
+              }}
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-[10px] border-2 border-indigo-500/25 flex items-center justify-center">
+              <User size={18} className="text-slate-400" />
             </div>
+          )}
+        </div>
 
       </div>
     )
@@ -130,7 +135,16 @@ function SideBar() {
 
   return (
     <div
-      className="fixed lg:static inset-y-0 left-0 z-50 w-[270px] h-screen shrink-0 bg-[#0d0f14] border-r border-white/6">
+      className={`
+    fixed  lg:static inset-y-0 left-0 z-50
+    w-[270px]
+    bg-[#0d0f14]
+    border-r border-white/[0.06]
+    transform transition-transform duration-300
+    ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+    lg:translate-x-0
+  `}
+    >
       {/* Sidebar Container */}
       <div className="flex flex-col h-full overflow-hidden">
 
@@ -257,7 +271,7 @@ function SideBar() {
                       src={`${userData.avatar}?${Date.now()}`}
                       alt="Profile"
                       className="w-9 h-9 rounded-[10px] object-cover border-2 border-indigo-500/25"
-                      onLoad={() => console.log("✅ Image Loaded")}
+                      // onLoad={() => console.log("✅ Image Loaded")}
                       onError={(e) => {
 
                         setimageError(true);

@@ -8,6 +8,7 @@ export const agent= async(req,res)=>{
         
         //taking prompt from user
         const {prompt,conversationId}=req.body;
+        console.log(req.body);
         if(!prompt||!conversationId){
             return res.status(400).json({error:"Prompt and conversation ID are required"})
         }
@@ -27,10 +28,21 @@ export const agent= async(req,res)=>{
         //   retutn ai response
           const response= result.aiResponse;
 
+           await axios.post(`${process.env.CHAT_SERVICE_URL}/save-message`,{conversationId,
+            role:"assistant",
+            content:response
+          })
+
           return res.status(200).json({response})
 
 
-    }catch(error){
-        return res.status(500).json({error:error.message})
-    }
+    }catch (error) {
+  console.error("Status:", error.response?.status);
+  console.error("Response:", error.response?.data);
+  console.error(error);
+
+  return res.status(error.response?.status || 500).json({
+    error: error.response?.data || error.message,
+  });
+}
 }
