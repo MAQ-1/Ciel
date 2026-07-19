@@ -17,14 +17,20 @@ function ChatArea() {
 
 useEffect(() => {
   const getMsg = async () => {
+    
     if (selectedConversation) {
+
+      if (selectedConversation.title == "New Chat") {
+        // Do something
+        return;
+      }
       const data = await getMessages(selectedConversation._id);
       dispatch(setMessages(data.messages));
     }
   };
 
   getMsg();
-}, [selectedConversation]);
+}, [selectedConversation?._id]);
 
 
 

@@ -1,4 +1,5 @@
-import redis from '../../../shared/redis.js';
+import redis from '../../../shared/redis/redis.js';
+
 import {getMessages} from "../util/getMessages.js";
 export const getMemory=async(conversationId)=>{
     
@@ -11,7 +12,11 @@ export const getMemory=async(conversationId)=>{
      }
     //  agr nhi hai to set krdo  messages ko 
 
-     const messages=await getMessages(conversationId);
+       const result = await getMessages(conversationId);
+
+    // Extract only the messages array
+      const messages = result.messages;
+
      await redis.set(key, JSON.stringify(messages),
     "EX",24*60*60); // 24 hours expiration
 

@@ -1,6 +1,7 @@
 import axios from "axios";
 import graph from "../graph/graph.js"
-
+import {addMessage} from "../config/memory.js"
+import redis from '../../../shared/redis/redis.js';
 // api key for agents
 
 export const agent= async(req,res)=>{
@@ -12,6 +13,9 @@ export const agent= async(req,res)=>{
         if(!prompt||!conversationId){
             return res.status(400).json({error:"Prompt and conversation ID are required"})
         }
+
+
+      //  await redis.del(`messages-${conversationId}`); // Clear the cache for the conversation
           
         // calling the save-message api
           await axios.post(`${process.env.CHAT_SERVICE_URL}/save-message`,{conversationId,
@@ -24,9 +28,16 @@ export const agent= async(req,res)=>{
             prompt,conversationId
 
           })
+
+    
              
         //   retutn ai response
           const response= result.aiResponse;
+           
+          // add the new message to redis cache
+        await addMessage(conversationId,"user",prompt);
+          // saving message from agent to redis cache
+          await addMessage(conversationId,"assistant",response);
 
            await axios.post(`${process.env.CHAT_SERVICE_URL}/save-message`,{conversationId,
             role:"assistant",

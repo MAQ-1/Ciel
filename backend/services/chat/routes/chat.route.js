@@ -9,7 +9,7 @@ router.get("/create-conversation", createConversation);
 router.get("/get-conversations",getConversation);
 
 // update conversation api
-router.post("/update-conversations", updateConversation);
+router.post("/update-conversation", updateConversation);
 
 // send message api
 router.post("/save-message",saveMessage);

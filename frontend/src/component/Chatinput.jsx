@@ -5,29 +5,52 @@ import sendMessage from '../features/sendMessage.js'
 import { useSelector } from 'react-redux'
 import { useDispatch } from 'react-redux'
 import { addMessage } from '../redux/messageSlice.js'
-
+import { createConversation } from '../features/createConversation.js'
+import { setSelectedConversation, addConversation } from '../redux/conversationSlice.js'
+import { updateConversation } from '../features/updateConversation.js'
+import { setConvTitle } from '../redux/conversationSlice.js'
+import { useEffect } from 'react'
 function Chatinput() {
-  
-  const {selectedConversation}=useSelector((state)=>state.conversation)
+
+  const { selectedConversation } = useSelector((state) => state.conversation)
   const { messages } = useSelector((state) => state.message)
   const [value, setValue] = useState("")
-  const dispatch=useDispatch()
-  
-  const handleSendMessage=async()=>{
-     const payload={
-       prompt:value.trim(),
-       conversationId:selectedConversation?._id
-     } 
-       dispatch(addMessage({role:"user",content:value.trim()}))
-        
-       setValue("") // Clear the input field after sending the message
-        // console.log("Payload:", payload);
-        // console.log("Selected Conversation:", selectedConversation);
-        // console.log("Value:", value);
+  const dispatch = useDispatch()
 
-     const data=await sendMessage(payload)
-      dispatch(addMessage({role:"assistant",content: data.response}))
-     console.log("data from sendMessage",data)
+  const handleSendMessage = async () => {
+
+    let conversation = selectedConversation;
+    if (!conversation) {
+      const conv = await createConversation()
+      dispatch(setSelectedConversation(conv))
+      dispatch(addConversation(conv))
+      conversation = conv
+    }
+
+    // setting title
+    if (conversation.title == "New Chat") {
+      const update = await updateConversation({
+        id: conversation._id,
+        title: value.trim()
+      });
+      dispatch(setConvTitle({ conversationId: conversation._id, title:value.trim() }))
+    }
+
+    const payload = {
+      prompt: value.trim(),
+      conversationId: conversation?._id
+    }
+
+    dispatch(addMessage({ role: "user", content: value.trim() }))
+
+    setValue("") // Clear the input field after sending the message
+    // console.log("Payload:", payload);
+    // console.log("Selected Conversation:", selectedConversation);
+    // console.log("Value:", value);
+
+    const data = await sendMessage(payload)
+    dispatch(addMessage({ role: "assistant", content: data.response }))
+    console.log("data from sendMessage", data)
   }
 
 

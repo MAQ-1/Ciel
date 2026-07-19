@@ -1,8 +1,22 @@
 import {getModel} from "../config/llmModels.js";
+import {getMemory} from "../config/memory.js";
+import {
+  SystemMessage,
+  HumanMessage,
+  AIMessage,
+} from "@langchain/core/messages";
+
 
 // chat agent getting the prompt and resposne
 export const chatAgent=async(state)=>{
   const llm= await getModel("chat");
+
+  const historyResponse = await getMemory(state.conversationId);
+
+   const history = historyResponse.messages || [];
+
+    // console.log(history);
+    // console.log(Array.isArray(history));
   const systemPrompt=`
   You are Ciel AI, an intelligent and professional AI assistant .
 
@@ -30,18 +44,25 @@ Rules:
   
   `
 
-  const response = await llm.invoke([
-    {
-        "role":"system",
-        "content":systemPrompt
-    },
-       {
-      "role":"human",
-         "content":state.prompt
- 
-       }  
-    ]
-  );
+
+  const messages=[
+             new SystemMessage(systemPrompt),
+  ];
+
+  history.forEach(msg=>{
+    if(msg.role==="user"){
+        messages.push(new HumanMessage(msg.content));
+    }else{
+        messages.push(new AIMessage(msg.content));
+    }
+  });
+   
+
+  messages.push(new HumanMessage(state.prompt));
+  // console.log(messages);
+
+
+  const response = await llm.invoke(messages);
   
 
   return {
