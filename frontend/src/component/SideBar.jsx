@@ -59,7 +59,7 @@ function SideBar({ sidebarOpen, setSidebarOpen }) {
         </button>
 
         <button className="flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 bg-transparent border-none cursor-pointer"
-          onClick={handleCreateConversation}>
+          onClick={()=>dispatch(setSelectedConversation(null))}>
           <Plus />
         </button>
 
@@ -177,7 +177,7 @@ function SideBar({ sidebarOpen, setSidebarOpen }) {
 
           {/* New Chat Icon */}
           <button
-            onClick={handleCreateConversation}
+            onClick={() => dispatch(setSelectedConversation(null))}
             className="flex items-center justify-center w-7 h-7 rounded-lg
                                 text-slate-500 hover:text-slate-200 hover:bg-white/[0.05]
                                 transition-colors duration-150 cursor-pointer"
@@ -189,7 +189,7 @@ function SideBar({ sidebarOpen, setSidebarOpen }) {
         {/* ================= NEW CHAT BUTTON ================= */}
         <div className="px-4 py-4">
           <button
-            onClick={handleCreateConversation}
+            onClick={() => dispatch(setSelectedConversation(null))}
             className="w-full flex items-center justify-center gap-2
                                 text-sm font-medium text-white
                                 bg-gradient-to-r from-indigo-500 to-violet-700
