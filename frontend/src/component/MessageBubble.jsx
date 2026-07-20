@@ -2,15 +2,29 @@ import React from 'react'
 import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { useState } from 'react'
-import { X } from "lucide-react"
+import { X, ExternalLink } from "lucide-react"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { Copy, Check } from "lucide-react";
+
 function MessageBubble({ role, content, images }) {
 
   const isUser = role === "user"
   const [lightBox, setLightBox] = React.useState(null)
+  const [copiedCode, setCopiedCode] = useState("");
 
+  const handleCopyCode = async (code) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
 
-
-
+      setTimeout(() => {
+        setCopiedCode("");
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
 
 
 
@@ -52,7 +66,8 @@ function MessageBubble({ role, content, images }) {
           </div>
         )}
 
-        <Markdown remarkPlugins={[remarkGfm]}
+        <Markdown
+          remarkPlugins={[remarkGfm]}
           components={{
             h1: ({ children }) => (
               <h1 className="text-2xl font-bold mt-5 mb-3">
@@ -90,9 +105,7 @@ function MessageBubble({ role, content, images }) {
               </ol>
             ),
 
-            li: ({ children }) => (
-              <li>{children}</li>
-            ),
+            li: ({ children }) => <li>{children}</li>,
 
             strong: ({ children }) => (
               <strong className="font-semibold text-white">
@@ -111,9 +124,10 @@ function MessageBubble({ role, content, images }) {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sky-400 hover:underline"
+                className="inline-flex items-center gap-1 text-sky-400 hover:underline"
               >
                 {children}
+                <ExternalLink size={14} />
               </a>
             ),
 
@@ -127,28 +141,78 @@ function MessageBubble({ role, content, images }) {
               <hr className="my-4 border-white/10" />
             ),
 
-            code: ({ children }) => (
-              <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-sky-300 text-sm">
-                {children}
-              </code>
-            ),
+            code({ inline, className, children, ...props }) {
+              const match = /language-(\w+)/.exec(className || "");
+              const codeString = String(children).replace(/\n$/, "");
 
-            pre: ({ children }) => (
-              <pre className="bg-zinc-900 border border-white/10 rounded-xl p-4 overflow-x-auto my-4">
-                {children}
-              </pre>
-            ),
+              if (!inline && match) {
+                return (
+                  <div className="relative my-4 group">
+                    <button
+                      onClick={() => handleCopyCode(codeString)}
+                      className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-md bg-zinc-800/90 px-2 py-1 text-xs text-slate-200 opacity-0 transition-opacity duration-200 group-hover:opacity-100 hover:bg-zinc-700"
+                    >
+                      {copiedCode === codeString ? (
+                        <>
+                          <Check size={14} />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={14} />
+                          Copy
+                        </>
+                      )}
+                    </button>
+
+                    <SyntaxHighlighter
+                      language={match[1]}
+                      style={oneDark}
+                      PreTag="div"
+                      customStyle={{
+                        margin: 0,
+                        borderRadius: "12px",
+                        padding: "1rem",
+                        background: "#18181b",
+                      }}
+                      {...props}
+                    >
+                      {codeString}
+                    </SyntaxHighlighter>
+                  </div>
+                );
+              }
+
+              return (
+                <code
+                  className="rounded bg-zinc-800 px-1.5 py-0.5 text-sm text-sky-300"
+                  {...props}
+                >
+                  {children}
+                </code>
+              );
+            },
 
             table: ({ children }) => (
               <div className="overflow-x-auto my-4">
-                <table className="w-full border border-white/10">
+                <table className="w-full border border-white/10 rounded-lg overflow-hidden">
                   {children}
                 </table>
               </div>
             ),
 
+            thead: ({ children }) => (
+              <thead className="bg-white/5">
+                {children}
+              </thead>
+            ),
+
+            tbody: ({ children }) => (
+              <tbody>{children}</tbody>
+            ),
+
             th: ({ children }) => (
-              <th className="border border-white/10 bg-white/5 px-3 py-2 text-left font-semibold">
+              <th className="border border-white/10 px-3 py-2 text-left font-semibold">
                 {children}
               </th>
             ),
