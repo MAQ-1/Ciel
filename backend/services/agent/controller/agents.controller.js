@@ -29,6 +29,9 @@ export const agent= async(req,res)=>{
 
           })
 
+          console.log("GRAPH RESULT:");
+       console.dir(result, { depth: null });
+
     
              
         //   retutn ai response
@@ -38,6 +41,18 @@ export const agent= async(req,res)=>{
         await addMessage(conversationId,"user",prompt);
           // saving message from agent to redis cache
           await addMessage(conversationId,"assistant",response);
+           
+      // console.log("NEW CODE RUNNING");
+      // console.log({
+      //   conversationId,
+      //   role: "assistant",
+      //   content: response,
+      //   images: result.images,
+      // });
+
+
+
+
 
            await axios.post(`${process.env.CHAT_SERVICE_URL}/save-message`,{conversationId,
             role:"assistant",
