@@ -1,8 +1,25 @@
-import {getModel} from "../config/llmModels.js";
+import { getModel } from "../config/llmModels.js";
 
-export const router= async(state)=>{
-  const llm=await getModel("router")
-  
+export const router = async (state) => {
+
+  if (state.agent && state.agent !== "auto") {
+
+    return {
+      ...state,
+      agent: state.agent
+    }
+  }
+
+
+
+
+
+
+
+
+
+  const llm = await getModel("router")
+
   const prompt = `
 You are an AI Router responsible for selecting the most appropriate agent for a user's request.
 
@@ -50,11 +67,11 @@ User Query:
 ${state.prompt}
 `;
 
-const response = await llm.invoke(prompt);
+  const response = await llm.invoke(prompt);
 
-return{
-  ...state,
-  agent:response.content.trim().toLowerCase()
-}
+  return {
+    ...state,
+    agent: response.content.trim().toLowerCase()
+  }
 
 }

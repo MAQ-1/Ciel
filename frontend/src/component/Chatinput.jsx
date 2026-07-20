@@ -49,7 +49,8 @@ function Chatinput() {
 
     const payload = {
       prompt: value.trim(),
-      conversationId: conversation?._id
+      conversationId: conversation?._id,
+      agent: selectedAgent.toLowerCase() // Send the selected agent to the backend
     }
 
     dispatch(addMessage({ role: "user", content: value.trim() }))
@@ -60,7 +61,7 @@ function Chatinput() {
     // console.log("Value:", value);
 
     const data = await sendMessage(payload)
-    dispatch(addMessage({ role: "assistant", content: data.response }))
+    dispatch(addMessage({ role: "assistant", content: data.answer,images:data.images }))
     console.log("data from sendMessage", data)
   }
 

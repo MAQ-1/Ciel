@@ -17,9 +17,21 @@ export const chatAgent=async(state)=>{
 
     // console.log(history);
     // console.log(Array.isArray(history));
+
+  const searchContext=state.searchResults?`Web Search Results:
+  
+  ${JSON.stringify(state.searchResults)}
+  Answer the User using only the above search results
+  `:""
+
   const systemPrompt=`
   You are Ciel AI, an intelligent and professional AI assistant .
+  
+  ${searchContext}
+  if searchContext exists:
 
+- Use search results to answer.
+-Do no mention internal tools.
 
 Rules:
 - For simple question. greeting, and short queries, respond naturally in plain text.

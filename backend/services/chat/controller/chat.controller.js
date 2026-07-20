@@ -69,7 +69,7 @@ export const updateConversation=async(req,res)=>{
 export const saveMessage=async(req,res)=>{
     try{ 
         // taking id,role,and content from body
-        const{conversationId,role,content}=req.body;
+        const{conversationId,role,content,images}=req.body;
        
         //just checking if all data is present or not
         if(!conversationId || !role || !content){
@@ -80,7 +80,8 @@ export const saveMessage=async(req,res)=>{
         const message=await Message.create({
             conversationId,
             role,
-            content
+            content,
+            images
         })
 
         return res.status(201).json({message:"message saved",message})
