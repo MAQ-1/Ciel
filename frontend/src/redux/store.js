@@ -7,6 +7,7 @@ export const store=configureStore({
     reducer:{
         user:userReducer,
         conversation:conversationReducer,
-        message:messageReducer
+        message:messageReducer,
+        
     }
 })

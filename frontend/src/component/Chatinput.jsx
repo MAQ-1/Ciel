@@ -11,7 +11,7 @@ import { updateConversation } from '../features/updateConversation.js'
 import { setConvTitle } from '../redux/conversationSlice.js'
 import { useEffect } from 'react'
 import { Zap, MessageSquare, Code2, FileText, ImageIcon, Presentation, Globe } from "lucide-react"
-
+import { setArtifacts } from '../redux/messageSlice.js'
 
 
 
@@ -56,11 +56,10 @@ function Chatinput() {
     dispatch(addMessage({ role: "user", content: value.trim() }))
 
     setValue("") // Clear the input field after sending the message
-    // console.log("Payload:", payload);
-    // console.log("Selected Conversation:", selectedConversation);
-    // console.log("Value:", value);
+   
 
     const data = await sendMessage(payload)
+    dispatch(setArtifacts(data?.artifacts || []))
     dispatch(addMessage({ role: "assistant", content: data?.answer,images:data?.images }))
     console.log("data from sendMessage", data)
   }

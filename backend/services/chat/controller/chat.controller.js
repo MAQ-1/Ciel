@@ -69,7 +69,7 @@ export const updateConversation=async(req,res)=>{
 export const saveMessage=async(req,res)=>{
     try{ 
         // taking id,role,and content from body
-        const{conversationId,role,content,images}=req.body;
+        const{conversationId,role,content,images,artifacts}=req.body;
        
         //just checking if all data is present or not
         if(!conversationId || !role || !content){
@@ -81,7 +81,8 @@ export const saveMessage=async(req,res)=>{
             conversationId,
             role,
             content,
-            images
+            images,
+            artifacts // initially artifacts will be empty, it will be updated later when agent generate cod
         })
 
         return res.status(201).json({message:"message saved",message})
