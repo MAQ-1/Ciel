@@ -29,6 +29,9 @@ function MessageBubble({ role, content, images }) {
 
 
 
+
+
+
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-3`}>
       {!isUser && (
@@ -36,7 +39,7 @@ function MessageBubble({ role, content, images }) {
           AI
         </div>
       )}
-      <div className={`relative max-w-[78%] px-4.5 py-3 rounded-2xl text-[14px] leading-relaxed
+      <div className={`relative w-fit max-w-[78%] px-4.5 py-3 rounded-2xl text-[14px] leading-relaxed
             ${isUser
           ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-br-sm shadow-md shadow-blue-500/20"
           : "bg-white/[0.06] backdrop-blur-sm border border-white/[0.08] text-slate-200 rounded-bl-sm shadow-sm"
@@ -47,11 +50,17 @@ function MessageBubble({ role, content, images }) {
         )}
 
         {images.length > 0 && (
-          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div
+            className={`mt-3 ${images.length === 1
+              ? "flex"
+              : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
+              }`}
+          >
             {images.map((img, i) => (
               <div
                 key={i}
-                className="aspect-square overflow-hidden rounded-xl border border-white/10 bg-zinc-900"
+                className={`overflow-hidden rounded-xl border border-white/10 bg-zinc-900 ${images.length > 1 ? "aspect-square" : ""
+                  }`}
               >
                 <img
                   src={img}
@@ -59,7 +68,10 @@ function MessageBubble({ role, content, images }) {
                   onClick={() => setLightBox(img)}
                   loading="lazy"
                   onError={(e) => e.currentTarget.remove()}
-                  className="h-full w-full object-cover hover:scale-105 transition-transform duration-300"
+                  className={`hover:scale-105 transition-transform duration-300 ${images.length === 1
+                    ? "w-[450px] h-auto object-cover"
+                    : "h-full w-full object-cover"
+                    }`}
                 />
               </div>
             ))}
@@ -74,6 +86,22 @@ function MessageBubble({ role, content, images }) {
                 {children}
               </h1>
             ),
+
+            img: ({ src, alt }) => {
+              if (!src) return null;
+
+              return (
+                <img
+               
+                onClick={() => setLightBox(src)}
+                loading="lazy"
+                  src={src}
+                  alt={alt}
+                  onError={(e) => e.currentTarget.remove()}
+                  className="w-[450px] rounded-xl my-3"
+                />
+              );
+            },
 
             h2: ({ children }) => (
               <h2 className="text-xl font-bold mt-4 mb-2">

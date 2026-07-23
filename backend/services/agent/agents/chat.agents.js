@@ -9,7 +9,10 @@ import {
 
 // chat agent getting the prompt and resposne
 export const chatAgent=async(state)=>{
-  const llm= await getModel("chat");
+
+  try{
+   
+     const llm= await getModel("chat");
 
   const historyResponse = await getMemory(state.conversationId);
 
@@ -81,4 +84,13 @@ Rules:
     ...state,
     aiResponse: response.content
   }
+
+  }catch(error){
+       
+      return {
+    ...state,
+    aiResponse:"failed to generate response",
+  }
+  }
+ 
 }

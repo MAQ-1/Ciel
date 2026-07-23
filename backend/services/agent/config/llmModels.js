@@ -1,7 +1,7 @@
 import { ChatGroq } from "@langchain/groq"
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
 import { ChatOpenRouter } from "@langchain/openrouter";
-// chatAgent  Model
+// chatAgent and searching  Model
 
 const groq = new ChatGroq({
     model: "openai/gpt-oss-120b",
@@ -30,6 +30,9 @@ const openrouter = new ChatOpenRouter({
 });
 
 
+// vision model image generation and image understanding
+
+
 // creatinga model which give us a model 
 
 export const getModel=async(agent)=>{
@@ -39,7 +42,7 @@ export const getModel=async(agent)=>{
         case "search":
             return groq;
         case "vision":
-            return gemini;
+            return groq;
         case "pdf":
             return gemini;
         case "ppt":

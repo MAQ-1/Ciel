@@ -90,9 +90,9 @@ function Chatinput() {
     },
 
     {
-      id:"image",
+      id:"vision",
       icon:ImageIcon,
-      label:"Image"
+      label:"vision"
     },
 
     {

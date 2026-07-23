@@ -1,7 +1,10 @@
 import { getModel } from "../config/llmModels.js";
 
 export const codingAgent = async (state) => {
-    const intentLlm = await getModel("intent");
+
+    try{
+        
+        const intentLlm = await getModel("intent");
     const llm = await getModel("coding");
     const intentRes = await intentLlm.invoke(`
      You are an intent classifier.
@@ -151,4 +154,13 @@ ${state.prompt}
         aiResponse: data,
         artifacts: []
     }
+
+    }catch(error){
+return {
+        ...state,
+        aiResponse: "failed to generate response",
+        
+    }
+    }
+ 
 }
