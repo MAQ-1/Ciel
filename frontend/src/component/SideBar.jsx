@@ -190,7 +190,7 @@ function SideBar({ sidebarOpen, setSidebarOpen }) {
         <div className="px-4 py-4">
           <button
             onClick={() => dispatch(setSelectedConversation(null))}
-            className="w-full flex items-center justify-center gap-2
+            className="w-full flex cursor-pointer items-center justify-center gap-2
                                 text-sm font-medium text-white
                                 bg-gradient-to-r from-indigo-500 to-violet-700
                                 rounded-xl py-[10px]

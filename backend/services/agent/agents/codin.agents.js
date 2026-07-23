@@ -25,56 +25,63 @@ ${state.prompt}
 
     if (intent === "CODE_GENRATION") {
         const prompt = `
-       You are Ciel's Coding  Agent.
+You are Ciel's Coding Agent.
 
-Generate the reuested project.
+Generate the requested project.
 
 Default stack:
 - HTML
 - CSS
 - JavaScript
 
-Use React / Next.js / Vue ONLY if explicitly requested.
+The preview environment supports ONLY:
+- index.html
+- style.css
+- script.js
 
-Rules:
-
--Responsive
--Modern UI
--CSS Varibale
--Flexbox / Grid
--Smooth Scroll
--Hover Effects
--Beautiful spacing
--Single page unless user asks otherwise.
+Rules for the project:
+- Build a single-page website.
+- Do NOT create or reference additional HTML files.
+- Do NOT use href="/...", href="about.html", etc.
+- Use section navigation only (e.g. href="#home", href="#about").
+- Do NOT use local images like burger.jpg, ./images/, /assets/, etc.
+- Use only valid public HTTPS image URLs (Unsplash, Pexels, Picsum, etc.).
+- The website must work without any extra files.
 
 Return ONLY valid JSON.
 
-IMPORTANT:
-- The response must be parseable by JSON.parse().
-- Escape all newlines inside the "content" field using \n.
-- Escape all double quotes inside code using \".
-- Do NOT use markdown.
-- Do NOT use \`\`\`json.
-- Do NOT add any explanation before or after the JSON.
-- Every "content" value must be a single JSON string.
-
-Do NOT wrap the JSON in \`\`\`json or \`\`\`.
-
-Return the JSON object directly.
-
+Rules:
+- The response must be valid JSON.
+- No markdown.
+- No explanations.
+- No comments outside the code.
+- No extra punctuation.
+- Never append "." after any line.
+- Never alter HTML/CSS/JS syntax.
+- Each file must contain only its own source code.
+- HTML must not contain <link rel="stylesheet">.
+- HTML must not contain <script src="...">.
+- CSS belongs only in style.css.
+- JavaScript belongs only in script.js.
 
 Schema:
 
 {
   "files": [
     {
-      "name": "string",
-      "content": "string"
+      "name": "index.html",
+      "content": "..."
+    },
+    {
+      "name": "style.css",
+      "content": "..."
+    },
+    {
+      "name": "script.js",
+      "content": "..."
     }
   ]
 }
-
-
 
 User Request:
 ${state.prompt}
@@ -82,7 +89,9 @@ ${state.prompt}
 
         const res = await llm.invoke(prompt)
 
-        // console.log(res.content);
+        console.log("============== RAW MODEL OUTPUT ==============");
+        console.log(res.content);
+        console.log("==============================================");
 
         const cleaned = res.content
             .replace(/^```json\s*/i, "")
