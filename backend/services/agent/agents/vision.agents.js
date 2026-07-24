@@ -39,29 +39,29 @@ User Request:
 
 
         const prompt = res.content.trim();
-        console.log("Step 1: Image URL created");
+        // console.log("Step 1: Image URL created");
 
         //   image gen ke liye humne ek url banaya jisme hum prompt ko encode krke bhej rhe hai taki image generate ho sake
         const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`;
-        console.log(imageUrl);
+        // console.log(imageUrl);
         const imageRes = await axios.get(imageUrl, { responseType: "arraybuffer" });
 
-        console.log("Step 2: Image downloaded");
+        // console.log("Step 2: Image downloaded");
 
 
         const buffer = Buffer.from(imageRes.data)
 
-        console.log("Step 3: Buffer created");
+        // console.log("Step 3: Buffer created");
 
         const filename = `${Date.now()}.png`
 
         await uploadToS3(filename, buffer, "image/png")
-        console.log("Step 4: Uploaded to S3");
+        // console.log("Step 4: Uploaded to S3");
 
 
-        const downloadUrl = await getFromS3(filename, 60 * 60 * 24) // 1 day
+        const downloadUrl = await getFromS3(filename, 24*60) // 1 day
 
-        console.log("Step 5: Signed URL generated");
+        // console.log("Step 5: Signed URL generated");
 
         return {
             ...state,

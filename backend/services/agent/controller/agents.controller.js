@@ -63,8 +63,7 @@ export const agent = async (req, res) => {
      console.error(error);
 
   return res.status(500).json({
-    error: error.message,
-    stack: error.stack
+    console: error.message,
   });
   }
 }

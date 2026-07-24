@@ -44,7 +44,7 @@ export const getModel=async(agent)=>{
         case "vision":
             return groq;
         case "pdf":
-            return gemini;
+            return groq;
         case "ppt":
             return gemini;
         case "coding":
