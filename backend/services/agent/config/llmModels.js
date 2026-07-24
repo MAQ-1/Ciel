@@ -46,7 +46,7 @@ export const getModel=async(agent)=>{
         case "pdf":
             return groq;
         case "ppt":
-            return gemini;
+            return groq;
         case "coding":
             return openrouter;
         default:

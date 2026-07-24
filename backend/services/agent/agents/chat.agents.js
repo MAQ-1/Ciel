@@ -14,11 +14,9 @@ export const chatAgent=async(state)=>{
    
      const llm= await getModel("chat");
 
-  const historyResponse = await getMemory(state.conversationId);
+ const history = await getMemory(state.conversationId);
 
-   const history = historyResponse.messages || [];
-
-    // console.log(history);
+    console.log(history);
     // console.log(Array.isArray(history));
 
   const searchContext=state.searchResults?`Web Search Results:

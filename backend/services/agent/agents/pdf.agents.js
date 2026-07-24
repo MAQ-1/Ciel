@@ -2,11 +2,14 @@ import { getModel } from "../config/llmModels.js";
 import { generatePdf } from "../util/generatePdf.js";
 import { uploadToS3 } from "../util/uploadToS3.js";
 import { getFromS3 } from "../util/getFromS3.js";
-
+import { getConversationContext } from "../util/getConversationContext.js";
 
 export const pdfAgent = async (state) => {
   try {
     const llm = await getModel("pdf");
+    const conversationContext = await getConversationContext(
+      state.conversationId
+    );
     const prompt = `
    You are an expert document writer.
 
@@ -37,8 +40,11 @@ Rules:
 - Use clear professional language.
 
 
-Topic:
- ${state.prompt}        
+Conversation History:
+${conversationContext}
+
+Current User Request:
+${state.prompt}      
           `
 
     const res = await llm.invoke(prompt);

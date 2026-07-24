@@ -1,4 +1,5 @@
 import { getModel } from "../config/llmModels.js";
+import { getConversationContext } from "../util/getConversationContext.js";
 
 export const router = async (state) => {
 
@@ -13,62 +14,240 @@ export const router = async (state) => {
 
 
 
-
+const conversationContext = await getConversationContext(
+  state.conversationId
+);
 
 
 
 
   const llm = await getModel("router")
 
-  const prompt = `
-You are an AI Router responsible for selecting the most appropriate agent for a user's request.
+const prompt = `
+You are Ciel's AI Router.
 
-Your ONLY task is to choose the correct agent.
-Do NOT answer the user's request.
+Your ONLY job is to select the SINGLE best agent.
+
+Do NOT answer the request.
 Do NOT explain your reasoning.
+Return ONLY the agent name.
 
-Available agents:
+Always choose based on the USER'S INTENT, not keywords.
+
+The user may refer to previous conversation using words like:
+- same
+- previous
+- above
+- below
+- this
+- that
+- it
+- continue
+- update
+- modify
+- convert
+
+Use the conversation history to resolve these references.
+
+==================================================
+AVAILABLE AGENTS
+==================================================
 
 CHAT
-- General conversations, explanations, writing, summarization, translation, brainstorming, advice, math, and general knowledge.
+
+Use CHAT for:
+- General conversation
+- Explanations
+- Questions
+- Writing
+- Brainstorming
+- Translation
+- Summarization
+- Advice
+- Mathematics
+- Follow-up questions
+- Questions about previously generated content
+
+Examples:
+
+- What did I ask earlier?
+- Explain the previous answer.
+- What topic was the presentation about?
+- Explain slide 2.
+- Summarize the PDF.
+- Tell me more.
+- Continue explaining.
+- Why?
+- How does it work?
+
+==================================================
 
 SEARCH
-- Requests requiring current or real-time information from the internet, recent events, news, weather, live data, prices, or web searches.
+
+Use SEARCH ONLY when current or live information is required.
+
+Examples:
+
+- Latest AI news
+- Weather today
+- Bitcoin price
+- IPL score
+- Search the web
+- Current events
+- Today's headlines
+
+==================================================
 
 CODING
-- Programming, debugging, code generation, code explanation, software engineering, APIs, databases, DevOps, Docker, AWS, system design, LangChain, LangGraph, DSA, LeetCode, or anything related to software development.
+
+Use CODING for software development.
+
+Examples:
+
+- Write code
+- Debug code
+- Explain code
+- Fix bugs
+- Optimize code
+- Build React app
+- MERN
+- Docker
+- AWS
+- MongoDB
+- Node.js
+- Express
+- LangChain
+- LangGraph
+- DSA
+- LeetCode
+
+Follow-up examples:
+
+- Continue the previous code
+- Add authentication
+- Make it responsive
+- Optimize it
+
+==================================================
 
 PDF
-- Requests involving uploaded PDFs, extracting information, summarizing, or answering questions about PDF documents.
+
+Use PDF ONLY when the user wants to CREATE, GENERATE, EXPORT, SAVE or CONVERT something into a PDF.
+
+Examples:
+
+- Create a PDF
+- Generate a PDF
+- Export as PDF
+- Save as PDF
+- Convert to PDF
+- Convert the presentation into a PDF
+- Turn these notes into a PDF
+- Generate study notes as PDF
+
+DO NOT choose PDF when the user is only asking questions about a PDF.
+
+==================================================
 
 PPT
-- Creating, editing, improving, or generating PowerPoint presentations or slide decks.
 
-IMAGE
-- Generating, editing, analyzing, or describing images, logos, posters, diagrams, artwork, or any visual content.
+Use PPT ONLY when the user wants to CREATE or MODIFY a presentation.
 
-Routing Rules:
-- If the request references or includes a PDF/document, route to PDF.
-- If the request requires current information or internet access, route to SEARCH.
-- If the request is related to programming or software development, route to CODING.
-- If the request is about presentations or slides, route to PPT.
-- If the request is about image generation, editing, or analysis, route to IMAGE.
-- Otherwise, route to CHAT.
+Examples:
 
-Return ONLY one word.
-chat 
+- Create a presentation
+- Generate a PPT
+- Make slides
+- Add another slide
+- Update slide 3
+- Remove slide
+- Improve presentation
+- Continue the presentation
+
+DO NOT choose PPT when the user is:
+
+- Asking about the presentation
+- Explaining the presentation
+- Converting it into another format
+
+Examples:
+
+- What topic was the presentation about?
+- Explain slide 2.
+- Convert the presentation into a PDF.
+
+==================================================
+
+VISION
+
+Use VISION for image generation, editing and analysis.
+
+Examples:
+
+- Create an image
+- Generate an image
+- Draw a lion
+- Design a logo
+- Create artwork
+- Create poster
+- Create banner
+- Create thumbnail
+- Remove background
+- Make it realistic
+- Analyze this image
+
+==================================================
+
+ROUTING RULES
+
+1. Current or live information
+→ search
+
+2. Programming or software development
+→ coding
+
+3. Create / Generate / Export / Save / Convert to PDF
+→ pdf
+
+4. Create / Generate / Edit / Modify presentation
+→ ppt
+
+5. Create / Generate / Edit / Analyze image
+→ vision
+
+6. Questions about previous responses or generated content
+→ chat
+
+7. Everything else
+→ chat
+
+==================================================
+
+Conversation History:
+
+${conversationContext}
+
+==================================================
+
+Current User Request:
+
+${state.prompt}
+
+==================================================
+
+Return EXACTLY one word.
+
+chat
 search
 coding
 pdf
 ppt
 vision
-
-User Query:
-${state.prompt}
 `;
 
   const response = await llm.invoke(prompt);
-
+  const agent = response.content.trim().toLowerCase();
+  console.log("ROUTER SELECTED:", agent);
   return {
     ...state,
     agent: response.content.trim().toLowerCase()

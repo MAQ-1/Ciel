@@ -23,23 +23,27 @@ export const agent = async (req, res) => {
       role: "user",
       content: prompt
     })
+   
 
+    // add the new message to redis cache
+    await addMessage(conversationId, "user", prompt);
+
+    
     //   starting the graph
     const result = await graph.invoke({
       prompt, conversationId, agent
 
     })
 
-    console.log("GRAPH RESULT:");
-    console.dir(result, { depth: null });
+    // console.log("GRAPH RESULT:");
+    // console.dir(result, { depth: null });
 
 
 
     //   retutn ai response
     const response = result.aiResponse;
 
-    // add the new message to redis cache
-    await addMessage(conversationId, "user", prompt);
+    
     // saving message from agent to redis cache
     await addMessage(conversationId, "assistant", response);
 

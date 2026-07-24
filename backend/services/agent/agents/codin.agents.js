@@ -1,15 +1,31 @@
 import { getModel } from "../config/llmModels.js";
-
+import { getConversationContext } from "../util/getConversationContext.js";
 export const codingAgent = async (state) => {
 
-    try{
-        
-        const intentLlm = await getModel("intent");
-    const llm = await getModel("coding");
-    const intentRes = await intentLlm.invoke(`
-     You are an intent classifier.
+    try {
 
-Return ONLY one of these Classifier.
+        const intentLlm = await getModel("intent");
+        const llm = await getModel("coding");
+        const conversationContext = await getConversationContext(
+            state.conversationId
+        );
+const intentRes = await intentLlm.invoke(`
+You are an intent classifier.
+
+The user may refer to previous messages using words like:
+- same
+- previous
+- above
+- continue
+- it
+- that
+
+Use the conversation history to understand the user's intent.
+
+Conversation History:
+${conversationContext}
+
+Return ONLY one of these:
 
 CODE_GENRATION
 CODE_REVIEW
@@ -19,15 +35,15 @@ OPTIMIZATION
 CONVERSION
 DOCUMENTATION
 
-User Request:
+Current User Request:
 ${state.prompt}
-    `)
+`);
 
-    const intent = intentRes.content
-    console.log(intent)
+        const intent = intentRes.content
+        console.log(intent)
 
-    if (intent === "CODE_GENRATION") {
-        const prompt = `
+        if (intent === "CODE_GENRATION") {
+            const prompt = `
 You are Ciel's Coding Agent.
 
 Generate the requested project.
@@ -86,42 +102,45 @@ Schema:
   ]
 }
 
-User Request:
+Conversation History:
+${conversationContext}
+
+Current User Request:
 ${state.prompt}
         `
 
-        const res = await llm.invoke(prompt)
+            const res = await llm.invoke(prompt)
 
-        console.log("============== RAW MODEL OUTPUT ==============");
-        console.log(res.content);
-        console.log("==============================================");
+            console.log("============== RAW MODEL OUTPUT ==============");
+            console.log(res.content);
+            console.log("==============================================");
 
-        const cleaned = res.content
-            .replace(/^```json\s*/i, "")
-            .replace(/^```\s*/i, "")
-            .replace(/\s*```$/, "")
-            .trim();
+            const cleaned = res.content
+                .replace(/^```json\s*/i, "")
+                .replace(/^```\s*/i, "")
+                .replace(/\s*```$/, "")
+                .trim();
 
-        const data = JSON.parse(cleaned);
+            const data = JSON.parse(cleaned);
 
-        return {
-            ...state,
-            aiResponse: "Code generated successfully.",
-            artifacts: [
-                {
-                    id: Date.now(),
-                    type: "Project",
-                    files: data.files || [],
-                    title: state.prompt
+            return {
+                ...state,
+                aiResponse: "Code generated successfully.",
+                artifacts: [
+                    {
+                        id: Date.now(),
+                        type: "Project",
+                        files: data.files || [],
+                        title: state.prompt
 
-                }
-            ]
+                    }
+                ]
+            }
         }
-    }
 
 
-    // code generation nhi hoga to ye chalega
-    const res = await llm.invoke(`
+        // code generation nhi hoga to ye chalega
+        const res = await llm.invoke(`
         The user's request is:
 ${intent}
 
@@ -146,21 +165,21 @@ use heading like:
 User Request:
 ${state.prompt}
         `
-    )
+        )
 
-    const data = res.content
-    return {
-        ...state,
-        aiResponse: data,
-        artifacts: []
+        const data = res.content
+        return {
+            ...state,
+            aiResponse: data,
+            artifacts: []
+        }
+
+    } catch (error) {
+        return {
+            ...state,
+            aiResponse: "failed to generate response",
+
+        }
     }
 
-    }catch(error){
-return {
-        ...state,
-        aiResponse: "failed to generate response",
-        
-    }
-    }
- 
 }
