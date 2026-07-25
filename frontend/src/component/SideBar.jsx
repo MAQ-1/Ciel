@@ -12,7 +12,7 @@ import { setUserData } from "../redux/userSlice.js"
 import { User } from "lucide-react";
 import logout from '../features/Logout.js'
 import { useRef } from 'react';
-
+import BillingDrawer from './BillingDrawer.jsx';
 
 
 
@@ -23,7 +23,7 @@ function SideBar({ sidebarOpen, setSidebarOpen }) {
   const { userData } = useSelector((state) => state.user);
   const [imageError, setimageError] = useState(false)
   const avatarRef = useRef(Date.now());
-
+  const[showBilling, setShowBilling]=useState(false);
 
 
 
@@ -134,6 +134,7 @@ function SideBar({ sidebarOpen, setSidebarOpen }) {
   }
 
   return (
+    <>
     <div
       className={`
     fixed  lg:static inset-y-0 left-0 z-50
@@ -295,7 +296,9 @@ function SideBar({ sidebarOpen, setSidebarOpen }) {
 
                 {/* coins and logout button */}
                 <div className="flex gap-2" >
-                  <button className="flex items-center justify-center w-7 h-7 rounded-[7px] 
+                  <button 
+                  onClick={()=>setShowBilling(true)}
+                  className="flex items-center justify-center w-7 h-7 rounded-[7px] 
                                      border-none bg-transparent text-yellow-600 cursor-pointer hover:bg-white/[0.05]">
                     <Coins size={15} />
                   </button>
@@ -322,7 +325,18 @@ function SideBar({ sidebarOpen, setSidebarOpen }) {
         </div>
 
       </div>
+
+
+      
     </div>
+
+     {/* Billing Drawer Component */}
+       <BillingDrawer
+       open={showBilling}
+       onClose={() => setShowBilling(false)}
+       />
+
+      </>
   );
 
 

@@ -35,9 +35,16 @@ app.use('/api/agent',protect,proxy(
     process.env.AGENT_SERVICE_URL
 ));
 
+
+// billing server
+
+app.use('/api/billing',protect,proxyWithHeader(
+    process.env.BILLING_SERVICE_URL
+));
+
+
 // get CUrrent user
 app.get('/api/me',protect,getCurrentUser);
-
 
 
 
