@@ -1,16 +1,18 @@
 import { getModel } from "../config/llmModels.js";
 import { getConversationContext } from "../util/getConversationContext.js";
 import { deductCredits } from "../util/deductCredits.js";
+import { checkAgentLimit } from "../config/agentlimit.js";
 export const codingAgent = async (state) => {
 
     try {
 
+        await checkAgentLimit(state.userId, "coding")
         const intentLlm = await getModel("intent");
         const llm = await getModel("coding");
         const conversationContext = await getConversationContext(
             state.conversationId
         );
-const intentRes = await intentLlm.invoke(`
+        const intentRes = await intentLlm.invoke(`
 You are an intent classifier.
 
 The user may refer to previous messages using words like:
@@ -177,6 +179,13 @@ ${state.prompt}
         }
 
     } catch (error) {
+
+        if (error.status == 429) {
+            return {
+                ...state,
+                aiResponse: error?.data?.message
+            }
+        }
         return {
             ...state,
             aiResponse: "failed to generate response",

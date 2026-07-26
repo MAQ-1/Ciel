@@ -4,7 +4,7 @@ import { addMessage } from "../config/memory.js"
 import redis from '../../../shared/redis/redis.js';
 // api key for agents
 
-export const agent = async (req, res) => {
+export const agent = async (req, res,next) => {
   try {
 
     //taking prompt from user
@@ -65,6 +65,7 @@ export const agent = async (req, res) => {
 
 
   } catch (error) {
+    next(error);
      console.error(error);
 
   return res.status(500).json({

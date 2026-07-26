@@ -2,11 +2,11 @@ import { getModel } from "../config/llmModels.js"
 import axios from "axios"
 import { uploadToS3 } from "../util/uploadToS3.js";
 import { getFromS3 } from "../util/getFromS3.js";
-import {deductCredits} from "../util/deductCredits.js"
-
+import { deductCredits } from "../util/deductCredits.js"
+import { checkAgentLimit } from "../config/agentlimit.js";
 export const visionAgent = async (state) => {
     try {
-
+        await checkAgentLimit(state.userId, "vision")
         const llm = await getModel("vision");
         console.log(llm);
         const res = await llm.invoke(`
@@ -39,10 +39,10 @@ User Request:
 
 
         const prompt = res.content.trim();
-        
+
         //   image gen ke liye humne ek url banaya jisme hum prompt ko encode krke bhej rhe hai taki image generate ho sake
         const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`;
-      
+
         const imageRes = await axios.get(imageUrl, { responseType: "arraybuffer" });
 
         await deductCredits(state.userId, "vision");
@@ -50,15 +50,15 @@ User Request:
 
         const buffer = Buffer.from(imageRes.data)
 
-      
+
 
         const filename = `${Date.now()}.png`
 
         await uploadToS3(filename, buffer, "image/png")
-        
 
 
-        const downloadUrl = await getFromS3(filename, 24*60) // 1 day
+
+        const downloadUrl = await getFromS3(filename, 24 * 60) // 1 day
 
 
 
@@ -75,9 +75,12 @@ Link expires in 10 min...
         };
 
     } catch (error) {
-        console.error(error.message);
-        console.error(error.response?.status);
-        console.error(error.response?.data);
+        if (error.status == 429) {
+            return {
+                ...state,
+                aiResponse: error?.data?.message
+            }
+        }
 
         return {
             ...state,

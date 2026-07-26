@@ -2,9 +2,12 @@ import { getModel } from "../config/llmModels.js";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import fs from "fs/promises";
 import { deductCredits } from "../util/deductCredits.js";
-
+import { checkAgentLimit } from "../config/agentlimit.js";
 export const imageAnalyzerAgent = async (state) => {
+
+
     try {
+        await checkAgentLimit(state.userId, "vision")
         const llm = await getModel("imageAnalyzer");
 
         const imageBuffer = await fs.readFile(state.file.path);
@@ -43,14 +46,20 @@ Rules:
         ];
 
         const response = await llm.invoke(messages);
-          await deductCredits(state.userId, "vision");
+        await deductCredits(state.userId, "vision");
         return {
             ...state,
             aiResponse: response.content,
         };
-    } catch (err) {
-        console.error("Image Analyzer Error:", err);
+    } catch (error) {
+        console.error("Image Analyzer Error:", error);
 
+        if (error.status == 429) {
+            return {
+                ...state,
+                aiResponse: error?.data?.message
+            }
+        }
         return {
             ...state,
             aiResponse: "Error analyzing the image. Please try again.",

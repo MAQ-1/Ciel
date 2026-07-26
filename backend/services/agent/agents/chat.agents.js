@@ -1,34 +1,34 @@
-import {getModel} from "../config/llmModels.js";
-import {getMemory} from "../config/memory.js";
+import { getModel } from "../config/llmModels.js";
+import { getMemory } from "../config/memory.js";
 import {
   SystemMessage,
   HumanMessage,
   AIMessage,
 } from "@langchain/core/messages";
 import { deductCredits } from "../util/deductCredits.js";
-
+import { checkAgentLimit } from "../config/agentlimit.js";
 
 // chat agent getting the prompt and resposne
-export const chatAgent=async(state)=>{
-        
-  try{
-    
-      
+export const chatAgent = async (state) => {
 
-     const llm= await getModel("chat");
+  try {
 
- const history = await getMemory(state.conversationId);
+    checkAgentLimit(state.userId, "chat")
+
+    const llm = await getModel("chat");
+
+    const history = await getMemory(state.conversationId);
 
     console.log(history);
     // console.log(Array.isArray(history));
 
-  const searchContext=state.searchResults?`Web Search Results:
+    const searchContext = state.searchResults ? `Web Search Results:
   
   ${JSON.stringify(state.searchResults)}
   Answer the User using only the above search results
-  `:""
+  `: ""
 
-  const systemPrompt=`
+    const systemPrompt = `
   You are Ciel AI, an intelligent and professional AI assistant .
   
   ${searchContext}
@@ -61,37 +61,42 @@ Rules:
   `
 
 
-  const messages=[
-             new SystemMessage(systemPrompt),
-  ];
+    const messages = [
+      new SystemMessage(systemPrompt),
+    ];
 
-  history.forEach(msg=>{
-    if(msg.role==="user"){
+    history.forEach(msg => {
+      if (msg.role === "user") {
         messages.push(new HumanMessage(msg.content));
-    }else{
+      } else {
         messages.push(new AIMessage(msg.content));
+      }
+    });
+
+
+    messages.push(new HumanMessage(state.prompt));
+    // console.log(messages);
+
+
+    const response = await llm.invoke(messages);
+    await deductCredits(state.userId, "chat");
+
+    return {
+      ...state,
+      aiResponse: response.content
     }
-  });
-   
 
-  messages.push(new HumanMessage(state.prompt));
-  // console.log(messages);
-
-
-  const response = await llm.invoke(messages);
-  await deductCredits(state.userId, "chat");
-
-  return {
-    ...state,
-    aiResponse: response.content
-  }
-
-  }catch(error){
-       
+  } catch (error) {
+    if (error.status == 429) {
       return {
-    ...state,
-    aiResponse:"failed to generate response",
+        ...state,
+        aiResponse: error?.data?.message
+      }
+    }
+    return {
+      ...state,
+      aiResponse: "failed to generate response",
+    }
   }
-  }
- 
+
 }

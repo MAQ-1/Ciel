@@ -4,11 +4,15 @@ import { uploadToS3 } from "../util/uploadToS3.js";
 import { getFromS3 } from "../util/getFromS3.js";
 import { getConversationContext } from "../util/getConversationContext.js";
 import { deductCredits } from "../util/deductCredits.js";
+import { checkAgentLimit } from "../config/agentlimit.js";
+
 export const pptAgent = async (state) => {
+
+    await checkAgentLimit(state.userId, "ppt")
     try {
 
         const llm = await getModel("ppt");
-    
+
         // help to remember the context of the conversation and provide better responses
         const conversationContext = await getConversationContext(
             state.conversationId
@@ -83,6 +87,13 @@ ${state.prompt}
 
     } catch (error) {
         console.log(error);
+
+        if (error.status == 429) {
+            return {
+                ...state,
+                aiResponse: error?.data?.message
+            }
+        }
         return {
             ...state,
             aiResponse: "failed to generate ppt"

@@ -5,8 +5,10 @@ import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { vectorStore } from "../config/vectorDB.js";
 import { getModel } from "../config/llmModels.js";
 import { deductCredits } from "../util/deductCredits.js";
-
+import { checkAgentLimit } from "../config/agentlimit.js";
 export const pdfRagAgent = async (state) => {
+
+    await checkAgentLimit(state.userId, "pdf")
     try {
         // Read uploaded PDF
         const buffer = await fs.readFile(state.file.path);
@@ -17,7 +19,7 @@ export const pdfRagAgent = async (state) => {
         });
         const result = await parser.getText();
 
-         const text = result.text;
+        const text = result.text;
 
         if (!text || text.trim().length === 0) {
             return {
@@ -80,9 +82,15 @@ ${state.prompt}
             ...state,
             aiResponse: response.content,
         };
-    } catch (err) {
-        console.error("PDF RAG Error:", err);
+    } catch (error) {
+        console.error("PDF RAG Error:", error);
 
+        if (error.status == 429) {
+            return {
+                ...state,
+                aiResponse: error?.data?.message
+            }
+        }
         return {
             ...state,
             aiResponse: "Failed to process the PDF. Please try again.",

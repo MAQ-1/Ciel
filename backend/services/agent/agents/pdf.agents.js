@@ -4,8 +4,14 @@ import { uploadToS3 } from "../util/uploadToS3.js";
 import { getFromS3 } from "../util/getFromS3.js";
 import { getConversationContext } from "../util/getConversationContext.js";
 import { deductCredits } from "../util/deductCredits.js";
+import { checkAgentLimit } from "../config/agentlimit.js";
+
 export const pdfAgent = async (state) => {
+
+      
   try {
+
+    await checkAgentLimit(state.userId,"pdf")
     const llm = await getModel("pdf");
     const conversationContext = await getConversationContext(
       state.conversationId
@@ -69,8 +75,15 @@ ${state.prompt}
 > Link expires in 24 hours.
 `
     }
-  } catch (err) {
-    console.log(err);
+  } catch (error) {
+    console.log(error);
+
+    if(error.status==429){
+      return{
+        ...state,
+        aiResponse: error?.data?.message
+      }
+    }
     return {
       ...state,
       aiResponse: "failed to generate pdf, please try again later"
