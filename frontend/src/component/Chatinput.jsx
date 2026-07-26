@@ -19,7 +19,7 @@ import { setLoading } from '../redux/messageSlice.js'
 function Chatinput() {
   const [selectedAgent, setSelectedAgent] = useState("Auto")
   const { selectedConversation } = useSelector((state) => state.conversation)
-  const { messages } = useSelector((state) => state.message)
+  const { messages,isLoading } = useSelector((state) => state.message)
   const [value, setValue] = useState("")
   const dispatch = useDispatch()
   const [selectedFile, setSelectedFile] = useState(null)
@@ -260,7 +260,7 @@ function Chatinput() {
 
             {/* send button */}
             <button
-              disabled={!value?.trim()}
+              disabled={!value?.trim() && isLoading}
               onClick={handleSendMessage}
               className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all duration-150
     ${value?.trim()

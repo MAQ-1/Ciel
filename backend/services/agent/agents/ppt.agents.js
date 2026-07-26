@@ -8,9 +8,9 @@ import { checkAgentLimit } from "../config/agentlimit.js";
 
 export const pptAgent = async (state) => {
 
-    await checkAgentLimit(state.userId, "ppt")
+    
     try {
-
+       await checkAgentLimit(state.userId, "ppt")
         const llm = await getModel("ppt");
 
         // help to remember the context of the conversation and provide better responses
