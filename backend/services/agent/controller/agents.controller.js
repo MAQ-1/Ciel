@@ -9,7 +9,8 @@ export const agent = async (req, res) => {
 
     //taking prompt from user
     const { prompt, conversationId, agent } = req.body;
-    console.log(req.body);
+    const file = req.file; // Access the uploaded file
+    const userId=req.headers['x-user-id'];
     if (!prompt || !conversationId) {
       return res.status(400).json({ error: "Prompt and conversation ID are required" })
     }
@@ -31,7 +32,7 @@ export const agent = async (req, res) => {
     
     //   starting the graph
     const result = await graph.invoke({
-      prompt, conversationId, agent
+      prompt, conversationId, agent,userId,file
 
     })
 

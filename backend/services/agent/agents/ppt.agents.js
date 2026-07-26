@@ -3,7 +3,7 @@ import { generatePpt } from "../util/generatePpt.js";
 import { uploadToS3 } from "../util/uploadToS3.js";
 import { getFromS3 } from "../util/getFromS3.js";
 import { getConversationContext } from "../util/getConversationContext.js";
-
+import { deductCredits } from "../util/deductCredits.js";
 export const pptAgent = async (state) => {
     try {
 
@@ -56,7 +56,7 @@ ${state.prompt}
 `
         const res = await llm.invoke(prompt)
         const data = (JSON.parse(res.content));
-
+        await deductCredits(state.userId, "ppt");
         const ppt = await generatePpt(data);
         const buffer = await ppt.write({
             outputType: "nodebuffer",

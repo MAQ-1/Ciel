@@ -3,7 +3,7 @@ import { generatePdf } from "../util/generatePdf.js";
 import { uploadToS3 } from "../util/uploadToS3.js";
 import { getFromS3 } from "../util/getFromS3.js";
 import { getConversationContext } from "../util/getConversationContext.js";
-
+import { deductCredits } from "../util/deductCredits.js";
 export const pdfAgent = async (state) => {
   try {
     const llm = await getModel("pdf");
@@ -50,13 +50,13 @@ ${state.prompt}
     const res = await llm.invoke(prompt);
 
     const data = JSON.parse(res.content);
-
+    await deductCredits(state.userId, "pdf");
     const pdfbuffer = await generatePdf(data);
     const filename = `pdf-${Date.now()}.pdf`
     await uploadToS3(filename, pdfbuffer, "application/pdf")
 
     const downloadUrl = await getFromS3(filename, 24 * 60) // 10 minutes
-
+   
     return {
       ...state,
       aiResponse: `

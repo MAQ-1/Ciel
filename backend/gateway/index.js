@@ -31,7 +31,7 @@ app.use('/api/chat',protect,proxyWithHeader(
 ));
 
 // Agent server
-app.use('/api/agent',protect,proxy(
+app.use('/api/agent',protect,proxyWithHeader(
     process.env.AGENT_SERVICE_URL
 ));
 

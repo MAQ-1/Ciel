@@ -10,9 +10,9 @@ import { setSelectedConversation, addConversation } from '../redux/conversationS
 import { updateConversation } from '../features/updateConversation.js'
 import { setConvTitle } from '../redux/conversationSlice.js'
 import { useEffect } from 'react'
-import { Zap, MessageSquare, Code2, FileText, ImageIcon, Presentation, Globe } from "lucide-react"
+import { Zap, MessageSquare, Code2, FileText, ImageIcon, Presentation, Globe, X } from "lucide-react"
 import { setArtifacts } from '../redux/messageSlice.js'
-
+import { useRef } from 'react'
 
 
 
@@ -22,9 +22,9 @@ function Chatinput() {
   const { messages } = useSelector((state) => state.message)
   const [value, setValue] = useState("")
   const dispatch = useDispatch()
+  const [selectedFile, setSelectedFile] = useState(null)
   
-
-
+  const fileRef = useRef(null);
 
 
 
@@ -44,157 +44,232 @@ function Chatinput() {
         id: conversation._id,
         title: value.trim()
       });
-      dispatch(setConvTitle({ conversationId: conversation._id, title:value.trim() }))
+      dispatch(setConvTitle({ conversationId: conversation._id, title: value.trim() }))
     }
 
-    const payload = {
-      prompt: value.trim(),
-      conversationId: conversation?._id,
-      agent: selectedAgent.toLowerCase() // Send the selected agent to the backend
-    }
+
+
+
+    const formData = new FormData();
+    formData.append("prompt", value.trim());
+    formData.append("conversationId", conversation?._id);
+    formData.append("agent", selectedAgent.toLowerCase());
+    formData.append("file", selectedFile);
 
     dispatch(addMessage({ role: "user", content: value.trim() }))
 
     setValue("") // Clear the input field after sending the message
-   
 
-    const data = await sendMessage(payload)
+
+    const data = await sendMessage(formData)
+    setSelectedFile(null) // Clear the selected file after sending the message
     dispatch(setArtifacts(data?.artifacts || []))
-    dispatch(addMessage({ role: "assistant", content: data?.answer,images:data?.images }))
+    dispatch(addMessage({ role: "assistant", content: data?.answer, images: data?.images }))
     console.log("data from sendMessage", data)
   }
 
-   
+
   // mapping all the agent on site
-  const agents=[
+  const agents = [
     {
-      id:"auto",
-      icon:Zap,
-      label:"Auto"
+      id: "auto",
+      icon: Zap,
+      label: "Auto"
     },
     {
-      id:"chat",
-      icon:MessageSquare,
-      label:"Chat"
-    },
-
-    {
-      id:"coding",
-      icon:Code2,
-      label:"Coding"
-    },
-    {
-      id:"pdf",
-      icon:FileText,
-      label:"PDF"
+      id: "chat",
+      icon: MessageSquare,
+      label: "Chat"
     },
 
     {
-      id:"vision",
-      icon:ImageIcon,
-      label:"vision"
+      id: "coding",
+      icon: Code2,
+      label: "Coding"
+    },
+    {
+      id: "pdf",
+      icon: FileText,
+      label: "PDF"
     },
 
     {
-      id:"ppt",
-      icon:Presentation,
-      label:"PPT"
+      id: "vision",
+      icon: ImageIcon,
+      label: "vision"
+    },
+
+    {
+      id: "ppt",
+      icon: Presentation,
+      label: "PPT"
     },
     {
-      id:"search",
-      icon:Globe,
-      label:"Search"
+      id: "search",
+      icon: Globe,
+      label: "Search"
     }
   ]
 
 
 
   return (
-    <div className="w-full overflow-hidden px-3  md:px-5 py-4 border-t border-white/[0.06]
+
+    <>
+
+
+
+      <div className="w-full overflow-hidden px-3  md:px-5 py-4 border-t border-white/[0.06]
     ng=[#0d0f14]">
 
-      {/* Chat input field */}
-      <div className="flex flex-col gap-2 bg-white/[0.03] border border-white/[0.07] rounded-2xl px-4 pt-3.5 pb-3">
-       
-       
-         {/* all ai agent icon */}
-          <div 
-         
-          className="flex w-[80%] gap-2 pr-2 flex-wrap">
-              {agents.map((agent)=>{
-                   const isActive=selectedAgent===agent.label;
-                   const Icon=agent.icon;
+        {/* Chat input field */}
+        <div className="flex flex-col gap-2 bg-white/[0.03] border border-white/[0.07] rounded-2xl px-4 pt-3.5 pb-3">
 
-                   return(
-                     <div
-                     key={agent.label}
-                      onClick={()=>setSelectedAgent(agent.label)}
-                     className={` flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-full  text-xs font-medium border transition-all 
+
+          {/* all ai agent icon */}
+          <div
+
+            className="flex w-[80%] gap-2 pr-2 flex-wrap">
+            {agents.map((agent) => {
+              const isActive = selectedAgent === agent.label;
+              const Icon = agent.icon;
+
+              return (
+                <div
+                  key={agent.label}
+                  onClick={() => setSelectedAgent(agent.label)}
+                  className={` flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-full  text-xs font-medium border transition-all 
                      ${isActive
                       ? "bg-gradient-to-r from-indigo-500 to-violet-700 text-white border-transparent shadow-[0_1px_8px_rgba(99,102,241,.35)]"
                       : "bg-white/[0.05] text-slate-400 border-transparent hover:bg-white/[0.08] hover:text-slate-200 cursor-pointer"
-                     }`}>
+                    }`}>
 
-                       <Icon size={15}
-                        className={
-                          isActive?"text-white"
-                          :"text-slate-500"
-                        }/>
+                  <Icon size={15}
+                    className={
+                      isActive ? "text-white"
+                        : "text-slate-500"
+                    } />
 
-                        {agent.label}
+                  {agent.label}
 
-                     </div>
-                   )
-              })}
+                </div>
+              )
+            })}
           </div>
-       
-       
-        <textarea
-          onChange={(e) => setValue(e.target.value)}
-          value={value}
-          placeholder="Type your message..."
-          className="w-full bg-transparent outline-none resize-none text-[14px] text-slate-200 placeholder:text-slate-600
+
+
+          {/* preview of image and pdf  */}
+          {selectedFile && (
+            <div className="my-1">
+              <div className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 relative">
+
+                {selectedFile.type === "application/pdf" ? (
+                  <>
+                    <FileText size={18} className="text-red-400" />
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[10px] text-white/80 max-w-[100px] truncate">
+                        {selectedFile.name}
+                      </span>
+                      <span className="text-[8px] text-white/40">
+                        {(selectedFile.size / 1024).toFixed(0)} KB
+                      </span>
+                    </div>
+                  </>
+                ) : selectedFile.type.startsWith("image/") ? (
+                  <>
+                    <img
+                      src={URL.createObjectURL(selectedFile)}
+                      alt="Preview"
+                      className="h-8 w-8 rounded object-cover"
+                    />
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[10px] text-white/80 max-w-[100px] truncate">
+                        {selectedFile.name}
+                      </span>
+                      <span className="text-[8px] text-white/40">
+                        {(selectedFile.size / 1024).toFixed(0)} KB
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <span className="text-[10px] text-white">
+                    {selectedFile.name}
+                  </span>
+                )}
+
+                <button
+                  onClick={() => setSelectedFile(null)}
+                  className="ml-1 rounded-full p-0.5 hover:bg-white/10 transition"
+                >
+                  <X size={12} className="text-gray-400 hover:text-red-400" />
+                </button>
+
+              </div>
+            </div>
+          )}
+
+
+
+          <textarea
+            onChange={(e) => setValue(e.target.value)}
+            value={value}
+            placeholder="Type your message..."
+            className="w-full bg-transparent outline-none resize-none text-[14px] text-slate-200 placeholder:text-slate-600
            leading-relaxed [scrollbar-width:none] [&::-webkit-scrollbar]:hidden disabled:opacity-50"
-        />
+          />
 
 
-        {/* mic icon  */}
+          {/* mic icon  */}
 
-        <div className="flex items-center justify-between ">
+          <div className="flex items-center justify-between ">
 
-          <div className="flex items-center gap-2">
-            <button className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 hover:text-slate-400 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06] transition-all duration-150 bg-transparent cursor-pointer">
-              <Paperclip size={16} />
-            </button>
+            <div className="flex items-center gap-2">
 
-            <button className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 hover:text-slate-400 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06] transition-all duration-150 bg-transparent cursor-pointer">
-              <Mic size={16} />
+
+              {/* file selection and image */}
+              <input type="file" accept=".pdf,image/*" hidden ref={fileRef} onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  setSelectedFile(file);
+                }
+              }} />
+
+              <button
+                onClick={() => fileRef.current.click()}
+                className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 hover:text-slate-400 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06] transition-all duration-150 bg-transparent cursor-pointer">
+                <Paperclip size={16} />
+              </button>
+
+              <button className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 hover:text-slate-400 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06] transition-all duration-150 bg-transparent cursor-pointer">
+                <Mic size={16} />
+              </button>
+            </div>
+
+
+
+            {/* send button */}
+            <button
+              disabled={!value?.trim()}
+              onClick={handleSendMessage}
+              className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all duration-150
+    ${value?.trim()
+                  ? "bg-gradient-to-br from-indigo-500 to-violet-700 hover:opacity-90 text-white border-transparent cursor-pointer"
+                  : "bg-white/[0.05] text-slate-600 border-transparent cursor-not-allowed opacity-60"
+                }`}
+            >
+              <Send size={16} />
             </button>
           </div>
 
 
 
-          {/* send button */}
-          <button
-            disabled={!value?.trim()}
-            onClick={handleSendMessage}
-            className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all duration-150
-    ${value?.trim()
-                ? "bg-gradient-to-br from-indigo-500 to-violet-700 hover:opacity-90 text-white border-transparent cursor-pointer"
-                : "bg-white/[0.05] text-slate-600 border-transparent cursor-not-allowed opacity-60"
-              }`}
-          >
-            <Send size={16} />
-          </button>
         </div>
 
 
 
       </div>
+    </>
 
-
-
-    </div>
   )
 }
 

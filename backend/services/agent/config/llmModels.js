@@ -13,7 +13,7 @@ const groq = new ChatGroq({
 })
 
 const gemini= new ChatGoogleGenerativeAI({
-    model: "gemini-2.5-pro",
+    model: "gemini-2.5-flash",
     apiKey:process.env.GOOGLE_API_KEY,
     temperature: 0,
     maxRetries: 2,
@@ -49,6 +49,8 @@ export const getModel=async(agent)=>{
             return groq;
         case "coding":
             return openrouter;
+        case "imageAnalyzer":
+            return gemini;
         default:
             return groq;
     }

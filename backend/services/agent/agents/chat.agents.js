@@ -5,13 +5,16 @@ import {
   HumanMessage,
   AIMessage,
 } from "@langchain/core/messages";
+import { deductCredits } from "../util/deductCredits.js";
 
 
 // chat agent getting the prompt and resposne
 export const chatAgent=async(state)=>{
-
+        
   try{
-   
+    
+      
+
      const llm= await getModel("chat");
 
  const history = await getMemory(state.conversationId);
@@ -76,7 +79,7 @@ Rules:
 
 
   const response = await llm.invoke(messages);
-  
+  await deductCredits(state.userId, "chat");
 
   return {
     ...state,
