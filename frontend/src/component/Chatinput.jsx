@@ -13,7 +13,7 @@ import { useEffect } from 'react'
 import { Zap, MessageSquare, Code2, FileText, ImageIcon, Presentation, Globe, X } from "lucide-react"
 import { setArtifacts } from '../redux/messageSlice.js'
 import { useRef } from 'react'
-
+import { setLoading } from '../redux/messageSlice.js'
 
 
 function Chatinput() {
@@ -29,6 +29,11 @@ function Chatinput() {
 
 
   const handleSendMessage = async () => {
+   
+
+    // loading
+     dispatch(setLoading(true));
+
 
     let conversation = selectedConversation;
     if (!conversation) {
@@ -54,7 +59,10 @@ function Chatinput() {
     formData.append("prompt", value.trim());
     formData.append("conversationId", conversation?._id);
     formData.append("agent", selectedAgent.toLowerCase());
-    formData.append("file", selectedFile);
+    if( selectedFile){
+        formData.append("file", selectedFile);
+    }
+   
 
     dispatch(addMessage({ role: "user", content: value.trim() }))
 
@@ -62,6 +70,9 @@ function Chatinput() {
 
 
     const data = await sendMessage(formData)
+
+    dispatch(setLoading(false));
+
     setSelectedFile(null) // Clear the selected file after sending the message
     dispatch(setArtifacts(data?.artifacts || []))
     dispatch(addMessage({ role: "assistant", content: data?.answer, images: data?.images }))

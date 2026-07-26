@@ -167,7 +167,7 @@ function SideBar({ sidebarOpen, setSidebarOpen }) {
             </span>
 
             <span className="text-[10px] font-medium text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full tracking-wide">
-              Free
+              {`${userData?.plan} ` || "Free"}
             </span>
 
             <button
@@ -269,7 +269,7 @@ function SideBar({ sidebarOpen, setSidebarOpen }) {
                     <p className="text-[13.5px] font-semibold text-slate-300 truncate">
                       {userData?.name || "Guest User"}
                     </p>
-                    <p className="text-xs text-slate-400 mt-px">free</p>
+                    <p className="text-xs text-slate-400 mt-px">{`${userData?.plan} ` || "Free"}</p>
                   </div>
 
                   {/* coins and logout button */}
