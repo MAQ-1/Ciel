@@ -1,5 +1,5 @@
 import React from 'react'
-import { Mic, Paperclip, Send } from "lucide-react"
+import { Mic, Paperclip, Send, MicOff } from "lucide-react"
 import { useState } from 'react'
 import sendMessage from '../features/sendMessage.js'
 import { useSelector } from 'react-redux'
@@ -19,20 +19,89 @@ import { setLoading } from '../redux/messageSlice.js'
 function Chatinput() {
   const [selectedAgent, setSelectedAgent] = useState("Auto")
   const { selectedConversation } = useSelector((state) => state.conversation)
-  const { messages,isLoading } = useSelector((state) => state.message)
+  const { messages, isLoading } = useSelector((state) => state.message)
   const [value, setValue] = useState("")
   const dispatch = useDispatch()
   const [selectedFile, setSelectedFile] = useState(null)
-  
+
   const fileRef = useRef(null);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef(null);
+
+
+  // FOR MIC 
+
+  useEffect(() => {
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    recognition.onresult = (event) => {
+      let transcript = "";
+
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setValue(transcript);
+    }
+
+    recognition.onend = () => {
+      setListening(false);
+    }
+    recognitionRef.current = recognition;
+  }, [])
+
+  //  toggle mic function 
+
+  const toggleMic = () => {
+    if (!recognitionRef.current) {
+      alert("Speech recognition not supported")
+    }
+
+    if (listening) {
+      recognitionRef.current.stop();
+      setListening(false);
+    } else {
+      recognitionRef.current.start();
+      setListening(true);
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
   const handleSendMessage = async () => {
-   
+
 
     // loading
-     dispatch(setLoading(true));
+    dispatch(setLoading(true));
 
 
     let conversation = selectedConversation;
@@ -59,10 +128,10 @@ function Chatinput() {
     formData.append("prompt", value.trim());
     formData.append("conversationId", conversation?._id);
     formData.append("agent", selectedAgent.toLowerCase());
-    if( selectedFile){
-        formData.append("file", selectedFile);
+    if (selectedFile) {
+      formData.append("file", selectedFile);
     }
-   
+
 
     dispatch(addMessage({ role: "user", content: value.trim() }))
 
@@ -251,9 +320,21 @@ function Chatinput() {
                 <Paperclip size={16} />
               </button>
 
-              <button className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 hover:text-slate-400 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06] transition-all duration-150 bg-transparent cursor-pointer">
-                <Mic size={16} />
+              <button
+                onClick={toggleMic}
+                className={`
+                flex items-center justify-center w-8 h-8 rounded-lg 
+                border transition-all duration-150 bg-transparent cursor-pointer
+                hover:scale-105 active:scale-95
+                ${listening
+                    ? "bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/50 border-red-400"
+                    : "border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-700/50 hover:border-slate-500/30"
+                  }
+             `}
+              >
+                {listening ? <Mic size={16} /> : <MicOff size={16} />}
               </button>
+
             </div>
 
 
