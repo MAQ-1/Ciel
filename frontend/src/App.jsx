@@ -1,7 +1,10 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
+import Landing from "./pages/landing/Landing";
+
 import getCurrentUser from "./features/getCurrentUser";
 
 import {
@@ -10,30 +13,20 @@ import {
 } from "./redux/userSlice";
 
 function App() {
-
   const dispatch = useDispatch();
-  const loading = useSelector(state => state.user.loading);
+  const loading = useSelector((state) => state.user.loading);
 
   useEffect(() => {
-
     const fetchCurrentUser = async () => {
-
       try {
-
         const data = await getCurrentUser();
-
         dispatch(setUserData(data?.user ?? null));
-
       } finally {
-
         dispatch(setLoading(false));
-
       }
-
     };
 
     fetchCurrentUser();
-
   }, [dispatch]);
 
   if (loading) {
@@ -44,7 +37,14 @@ function App() {
     );
   }
 
-  return <Home />;
+  return (
+    
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/app" element={<Home />} />
+      </Routes>
+   
+  );
 }
 
 export default App;
