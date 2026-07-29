@@ -1,23 +1,102 @@
+# =========================
 # Dependencies
+# =========================
 node_modules/
 
-# Environment files
+# =========================
+# Environment Variables
+# =========================
 .env
 .env.*
+!.env.example
 
-# Build
+# =========================
+# Build Output
+# =========================
 dist/
 build/
+coverage/
 
+# =========================
 # Logs
+# =========================
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# IDE
+# =========================
+# IDE / Editor
+# =========================
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# OS
+# =========================
+# Operating System
+# =========================
 .DS_Store
 Thumbs.db
+
+# =========================
+# Secrets
+# =========================
 serviceAccountKey.json
 **/serviceAccountKey.json
+*.pem
+*.key
+*.p12
+
+# =========================
+# Docker
+# =========================
+.dockerignore
+
+# Docker Compose override
+docker-compose.override.yml
+
+# =========================
+# Terraform (if added later)
+# =========================
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# =========================
+# AWS
+# =========================
+.aws/
+
+# =========================
+# Vercel
+# =========================
+.vercel/
+
+# =========================
+# Misc
+# =========================
+*.tmp
+*.cache
+.cache/
+temp/
+tmp/
+
+# =========================
+# Test Output
+# =========================
+coverage/
+.nyc_output/
+
+# =========================
+# Mac/Linux
+# =========================
+.AppleDouble
+.LSOverride
+
+# =========================
+# Windows
+# =========================
+Desktop.ini
