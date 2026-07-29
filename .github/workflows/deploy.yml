@@ -139,12 +139,6 @@ jobs:
             --service ${{ secrets.GATEWAY_SERVICE }} \
             --force-new-deployment
 
-      - name: Wait for Gateway
-        run: |
-          aws ecs wait services-stable \
-            --cluster ${{ secrets.ECS_CLUSTER }} \
-            --services ${{ secrets.GATEWAY_SERVICE }}
-
       # ===========================
       # Deploy Agent
       # ===========================
@@ -155,12 +149,6 @@ jobs:
             --cluster ${{ secrets.ECS_CLUSTER }} \
             --service ${{ secrets.AGENT_SERVICE }} \
             --force-new-deployment
-
-      - name: Wait for Agent
-        run: |
-          aws ecs wait services-stable \
-            --cluster ${{ secrets.ECS_CLUSTER }} \
-            --services ${{ secrets.AGENT_SERVICE }}
 
       # ===========================
       # Deploy Auth
@@ -173,12 +161,6 @@ jobs:
             --service ${{ secrets.AUTH_SERVICE }} \
             --force-new-deployment
 
-      - name: Wait for Auth
-        run: |
-          aws ecs wait services-stable \
-            --cluster ${{ secrets.ECS_CLUSTER }} \
-            --services ${{ secrets.AUTH_SERVICE }}
-
       # ===========================
       # Deploy Chat
       # ===========================
@@ -190,12 +172,6 @@ jobs:
             --service ${{ secrets.CHAT_SERVICE }} \
             --force-new-deployment
 
-      - name: Wait for Chat
-        run: |
-          aws ecs wait services-stable \
-            --cluster ${{ secrets.ECS_CLUSTER }} \
-            --services ${{ secrets.CHAT_SERVICE }}
-
       # ===========================
       # Deploy Billing
       # ===========================
@@ -206,12 +182,6 @@ jobs:
             --cluster ${{ secrets.ECS_CLUSTER }} \
             --service ${{ secrets.BILLING_SERVICE }} \
             --force-new-deployment
-
-      - name: Wait for Billing
-        run: |
-          aws ecs wait services-stable \
-            --cluster ${{ secrets.ECS_CLUSTER }} \
-            --services ${{ secrets.BILLING_SERVICE }}
 
   deploy-frontend:
     needs: deploy-backend
