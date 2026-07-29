@@ -49,7 +49,7 @@ app.get('/api/me',protect,getCurrentUser);
 
 
 app.get('/',(req,res)=>{
-  res.json({message:"Gateway is running v1"});
+  res.json({message:"Gateway is running successfully"});
 })
 
 app.listen(PORT,()=>{
