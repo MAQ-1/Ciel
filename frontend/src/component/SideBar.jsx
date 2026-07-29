@@ -13,6 +13,8 @@ import { User } from "lucide-react";
 import logout from '../features/Logout.js'
 import { useRef } from 'react';
 import BillingDrawer from './BillingDrawer.jsx';
+import { useNavigate } from "react-router-dom";
+
 
 function SideBar({ sidebarOpen, setSidebarOpen }) {
   const [collapsed, setCollapsed] = React.useState(false)
@@ -23,6 +25,7 @@ function SideBar({ sidebarOpen, setSidebarOpen }) {
   const avatarRef = useRef(Date.now());
   const [showBilling, setShowBilling] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false)
+  const navigate = useNavigate();
 
   // Get conversation setting data and dispatching to reducer slice
   useEffect(() => {
@@ -77,14 +80,14 @@ function SideBar({ sidebarOpen, setSidebarOpen }) {
                   dispatch(setSelectedConversation(conv));
                 }}
                 className={`flex items-center gap-2.5 cursor-pointer mb-1 px-3 py-2.5 rounded-[10px] border transition-all duration-200 ease-in-out ${isActive
-                    ? "bg-indigo-500/10 border-indigo-500/20"
-                    : "border-transparent hover:bg-white/5"
+                  ? "bg-indigo-500/10 border-indigo-500/20"
+                  : "border-transparent hover:bg-white/5"
                   }`}
               >
                 <div
                   className={`flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 ${isActive
-                      ? "bg-indigo-500/15 text-indigo-400"
-                      : "bg-white/5 text-slate-500"
+                    ? "bg-indigo-500/15 text-indigo-400"
+                    : "bg-white/5 text-slate-500"
                     }`}
                 >
                   <MessageSquare size={18} />
@@ -220,14 +223,14 @@ function SideBar({ sidebarOpen, setSidebarOpen }) {
                     if (window.innerWidth < 1024) setMobileOpen(false);
                   }}
                   className={`flex items-center gap-2.5 cursor-pointer mb-1 px-3 py-2.5 rounded-[10px] border transition-all duration-200 ease-in-out ${isActive
-                      ? "bg-indigo-500/10 border-indigo-500/20"
-                      : "border-transparent hover:bg-white/5"
+                    ? "bg-indigo-500/10 border-indigo-500/20"
+                    : "border-transparent hover:bg-white/5"
                     }`}
                 >
                   <div
                     className={`flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 ${isActive
-                        ? "bg-indigo-500/15 text-indigo-400"
-                        : "bg-white/5 text-slate-500"
+                      ? "bg-indigo-500/15 text-indigo-400"
+                      : "bg-white/5 text-slate-500"
                       }`}
                   >
                     <MessageSquare size={18} />
@@ -284,9 +287,13 @@ function SideBar({ sidebarOpen, setSidebarOpen }) {
                     <button
                       className="flex items-center justify-center w-7 h-7 rounded-[7px] border-none bg-transparent text-red-500 cursor-pointer hover:bg-white/[0.05]"
                       onClick={() => {
-                        logout();
-                        setimageError(false);
-                        dispatch(setUserData(null));
+                        navigate("/", { replace: true });
+
+                        setTimeout(() => {
+                          logout();
+                          setimageError(false);
+                          dispatch(setUserData(null));
+                        }, 0);
                       }}
                     >
                       <LogOut size={18} />
