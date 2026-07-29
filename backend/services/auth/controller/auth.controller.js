@@ -50,8 +50,8 @@ export const login = async (req, res) => {
 
         res.cookie("session", sessionId, {
             httpOnly: true,
-            secure: false,
-            sameSite: "strict",
+            secure: true,
+            sameSite: "none",
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
 
@@ -82,8 +82,8 @@ export const logout = async (req, res) => {
         // clear cookie
         res.clearCookie("session", {
             httpOnly: true,
-            secure: false,
-            sameSite: "strict",
+            secure: true,
+            sameSite: "none",
         });
         console.log("Cookies:", req.cookies);
         console.log("Session ID:", req.cookies?.session);
