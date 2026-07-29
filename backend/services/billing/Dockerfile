@@ -1,12 +1,12 @@
-FROM node
+FROM node:22-slim
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm install --omit=dev
 
 COPY ./services/billing/package*.json ./services/billing/
-RUN cd services/billing && npm install
+RUN cd services/billing && npm install --omit=dev
 
 COPY ./services/billing ./services/billing
 COPY shared ./shared

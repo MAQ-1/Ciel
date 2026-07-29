@@ -1,4 +1,4 @@
-name: Ciel AI Deployment
+name: Ciel AI — Build & Deploy
 
 on:
   push:
@@ -8,14 +8,65 @@ on:
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
+# ─────────────────────────────────────────────────────────────
+# REUSABLE: detect which paths changed so we skip unchanged
+# services. Every backend job reads the output of this job.
+# ─────────────────────────────────────────────────────────────
 jobs:
-  deploy-backend:
-    runs-on: ubuntu-latest
 
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      gateway:  ${{ steps.filter.outputs.gateway }}
+      agent:    ${{ steps.filter.outputs.agent }}
+      auth:     ${{ steps.filter.outputs.auth }}
+      chat:     ${{ steps.filter.outputs.chat }}
+      billing:  ${{ steps.filter.outputs.billing }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      shared:   ${{ steps.filter.outputs.shared }}
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            gateway:
+              - 'backend/gateway/**'
+              - 'backend/package*.json'
+            agent:
+              - 'backend/services/agent/**'
+              - 'backend/package*.json'
+            auth:
+              - 'backend/services/auth/**'
+              - 'backend/package*.json'
+            chat:
+              - 'backend/services/chat/**'
+              - 'backend/package*.json'
+            billing:
+              - 'backend/services/billing/**'
+              - 'backend/package*.json'
+            frontend:
+              - 'frontend/**'
+            shared:
+              - 'backend/shared/**'
+
+  # ─────────────────────────────────────────────────────────────
+  # REUSABLE build logic extracted as a called workflow would be
+  # ideal, but GitHub doesn't support matrix + needs outputs well.
+  # We use individual jobs so each runs on its own runner in
+  # parallel — true parallelism, not sequential steps.
+  # ─────────────────────────────────────────────────────────────
+
+  build-gateway:
+    needs: changes
+    # rebuild if gateway OR shared changed (shared is copied into every image)
+    if: needs.changes.outputs.gateway == 'true' || needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -24,172 +75,163 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
+      - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      # ===========================
-      # Gateway
-      # ===========================
+      # Cache Docker layers — keyed on the Dockerfile + package-lock so the
+      # npm install layer is reused when only source files change.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build Gateway
-        run: |
-          docker build \
-            -f backend/gateway/Dockerfile \
-            -t gateway backend
+      - name: Build & Push Gateway
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/gateway/Dockerfile
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/gateway:latest
+          cache-from: type=gha,scope=gateway
+          cache-to:   type=gha,scope=gateway,mode=max
 
-      - name: Tag Gateway Image
-        run: |
-          docker tag gateway:latest \
-            $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/gateway:latest
+  # ─────────────────────────────────────────────────────────────
 
-      - name: Push Gateway Image
-        run: |
-          docker push \
-            $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/gateway:latest
-
-      # ===========================
-      # Agent
-      # ===========================
-
-      - name: Build Agent
-        run: |
-          docker build \
-            -f backend/services/agent/Dockerfile \
-            -t agent-service backend
-
-      - name: Tag Agent Image
-        run: |
-          docker tag agent-service:latest \
-            $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/agent-service:latest
-
-      - name: Push Agent Image
-        run: |
-          docker push \
-            $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/agent-service:latest
-
-      # ===========================
-      # Auth
-      # ===========================
-
-      - name: Build Auth
-        run: |
-          docker build \
-            -f backend/services/auth/Dockerfile \
-            -t auth-service backend
-
-      - name: Tag Auth Image
-        run: |
-          docker tag auth-service:latest \
-            $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/auth-service:latest
-
-      - name: Push Auth Image
-        run: |
-          docker push \
-            $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/auth-service:latest
-
-      # ===========================
-      # Chat
-      # ===========================
-
-      - name: Build Chat
-        run: |
-          docker build \
-            -f backend/services/chat/Dockerfile \
-            -t chat-service backend
-
-      - name: Tag Chat Image
-        run: |
-          docker tag chat-service:latest \
-            $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/chat-service:latest
-
-      - name: Push Chat Image
-        run: |
-          docker push \
-            $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/chat-service:latest
-
-      # ===========================
-      # Billing
-      # ===========================
-
-      - name: Build Billing
-        run: |
-          docker build \
-            -f backend/services/billing/Dockerfile \
-            -t billing-service backend
-
-      - name: Tag Billing Image
-        run: |
-          docker tag billing-service:latest \
-            $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/billing-service:latest
-
-      - name: Push Billing Image
-        run: |
-          docker push \
-            $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/billing-service:latest
-
-      # ===========================
-      # Deploy Gateway
-      # ===========================
-
-      - name: Deploy Gateway
-        run: |
-          aws ecs update-service \
-            --cluster ${{ secrets.ECS_CLUSTER }} \
-            --service ${{ secrets.GATEWAY_SERVICE }} \
-            --force-new-deployment
-
-      # ===========================
-      # Deploy Agent
-      # ===========================
-
-      - name: Deploy Agent
-        run: |
-          aws ecs update-service \
-            --cluster ${{ secrets.ECS_CLUSTER }} \
-            --service ${{ secrets.AGENT_SERVICE }} \
-            --force-new-deployment
-
-      # ===========================
-      # Deploy Auth
-      # ===========================
-
-      - name: Deploy Auth
-        run: |
-          aws ecs update-service \
-            --cluster ${{ secrets.ECS_CLUSTER }} \
-            --service ${{ secrets.AUTH_SERVICE }} \
-            --force-new-deployment
-
-      # ===========================
-      # Deploy Chat
-      # ===========================
-
-      - name: Deploy Chat
-        run: |
-          aws ecs update-service \
-            --cluster ${{ secrets.ECS_CLUSTER }} \
-            --service ${{ secrets.CHAT_SERVICE }} \
-            --force-new-deployment
-
-      # ===========================
-      # Deploy Billing
-      # ===========================
-
-      - name: Deploy Billing
-        run: |
-          aws ecs update-service \
-            --cluster ${{ secrets.ECS_CLUSTER }} \
-            --service ${{ secrets.BILLING_SERVICE }} \
-            --force-new-deployment
-
-  deploy-frontend:
-    needs: deploy-backend
+  build-agent:
+    needs: changes
+    if: needs.changes.outputs.agent == 'true' || needs.changes.outputs.shared == 'true'
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Push Agent
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/services/agent/Dockerfile
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/agent-service:latest
+          cache-from: type=gha,scope=agent
+          cache-to:   type=gha,scope=agent,mode=max
+
+  # ─────────────────────────────────────────────────────────────
+
+  build-auth:
+    needs: changes
+    if: needs.changes.outputs.auth == 'true' || needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Push Auth
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/services/auth/Dockerfile
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/auth-service:latest
+          cache-from: type=gha,scope=auth
+          cache-to:   type=gha,scope=auth,mode=max
+
+  # ─────────────────────────────────────────────────────────────
+
+  build-chat:
+    needs: changes
+    if: needs.changes.outputs.chat == 'true' || needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Push Chat
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/services/chat/Dockerfile
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/chat-service:latest
+          cache-from: type=gha,scope=chat
+          cache-to:   type=gha,scope=chat,mode=max
+
+  # ─────────────────────────────────────────────────────────────
+
+  build-billing:
+    needs: changes
+    if: needs.changes.outputs.billing == 'true' || needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Push Billing
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/services/billing/Dockerfile
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/billing-service:latest
+          cache-from: type=gha,scope=billing
+          cache-to:   type=gha,scope=billing,mode=max
+
+  # ─────────────────────────────────────────────────────────────
+  # FRONTEND — completely independent, runs in parallel with all
+  # backend builds. No runtime dependency on backend at build time.
+  # ─────────────────────────────────────────────────────────────
+
+  build-deploy-frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -198,32 +240,96 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Build Frontend
+      - name: Install & Build
         run: |
           cd frontend
           npm ci
           npm run build
         env:
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY}}
-          VITE_RAZORPAY_KEY_ID: ${{ secrets.VITE_RAZORPAY_KEY_ID }}
-          VITE_SERVER_URL: ${{ secrets.VITE_SERVER_URL }}
+          VITE_FIREBASE_API_KEY:  ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_RAZORPAY_KEY_ID:   ${{ secrets.VITE_RAZORPAY_KEY_ID }}
+          VITE_SERVER_URL:        ${{ secrets.VITE_SERVER_URL }}
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region:            ${{ env.AWS_REGION }}
 
-      - name: Deploy to S3
+      - name: Sync to S3
         run: |
           aws s3 sync \
             frontend/dist \
             s3://${{ secrets.S3_BUCKET_NAME }} \
             --delete
 
-      - name: Invalidate CloudFront Cache
+      - name: Invalidate CloudFront
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*"
+
+  # ─────────────────────────────────────────────────────────────
+  # DEPLOY — waits for ALL build jobs. Uses always() so it runs
+  # even when some build jobs were skipped (no changes).
+  # Fires all 5 ECS updates in parallel background processes,
+  # then waits for all of them together.
+  # ─────────────────────────────────────────────────────────────
+
+  deploy-backend:
+    needs:
+      - build-gateway
+      - build-agent
+      - build-auth
+      - build-chat
+      - build-billing
+    # run if at least one build job succeeded or was skipped (not failed)
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      # Fire all ECS updates in parallel background processes,
+      # collect their PIDs, then wait for all of them.
+      - name: Deploy all services in parallel
+        run: |
+          deploy_service() {
+            local service_secret=$1
+            local label=$2
+            echo "[$label] triggering ECS deployment..."
+            aws ecs update-service \
+              --cluster ${{ secrets.ECS_CLUSTER }} \
+              --service "$service_secret" \
+              --force-new-deployment \
+              --no-cli-pager \
+              --output text > /dev/null
+            echo "[$label] ECS update-service call complete"
+          }
+
+          deploy_service "${{ secrets.GATEWAY_SERVICE }}" "gateway" &
+          deploy_service "${{ secrets.AGENT_SERVICE }}"   "agent"   &
+          deploy_service "${{ secrets.AUTH_SERVICE }}"    "auth"    &
+          deploy_service "${{ secrets.CHAT_SERVICE }}"    "chat"    &
+          deploy_service "${{ secrets.BILLING_SERVICE }}" "billing" &
+
+          # wait for all background jobs and capture any failures
+          FAILED=0
+          for pid in $(jobs -p); do
+            wait $pid || FAILED=$((FAILED + 1))
+          done
+
+          if [ $FAILED -gt 0 ]; then
+            echo "::error::$FAILED ECS deployment(s) failed"
+            exit 1
+          fi
+
+          echo "All ECS services updated successfully"
