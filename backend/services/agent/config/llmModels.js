@@ -1,6 +1,7 @@
 import { ChatGroq } from "@langchain/groq"
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
 import { ChatOpenRouter } from "@langchain/openrouter";
+
 // chatAgent and searching  Model
 
 const groq = new ChatGroq({
@@ -26,6 +27,7 @@ const openrouter = new ChatOpenRouter({
   model: "deepseek/deepseek-chat",
   temperature: 0,
   maxTokens: 8192,
+
   // other params...
 });
 

@@ -143,7 +143,7 @@ ${state.prompt}
 
 
         // code generation nhi hoga to ye chalega
-        const res = await llm.invoke(`
+        const stream = await llm.stream(`
         The user's request is:
 ${intent}
 
@@ -167,10 +167,26 @@ use heading like:
 
 User Request:
 ${state.prompt}
-        `
-        )
+        `)
 
-        const data = res.content
+        let data = ""
+        if (state.streamRes) {
+            state.streamRes.setHeader("Content-Type", "text/event-stream")
+            state.streamRes.setHeader("Cache-Control", "no-cache")
+            state.streamRes.setHeader("Connection", "keep-alive")
+            for await (const chunk of stream) {
+                const text = chunk.content
+                data += text
+                state.streamRes.write(`data: ${JSON.stringify({ text })}\n\n`)
+            }
+            state.streamRes.write(`data: [DONE]\n\n`)
+            state.streamRes.end()
+        } else {
+            for await (const chunk of stream) {
+                data += chunk.content
+            }
+        }
+
         await deductCredits(state.userId, "coding");
         return {
             ...state,

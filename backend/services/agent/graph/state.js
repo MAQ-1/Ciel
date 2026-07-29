@@ -11,6 +11,7 @@ export const agentState = Annotation.Root({
   artifacts:Annotation(),
   userId:Annotation(),
   file:Annotation(),
+  streamRes:Annotation(),
 
 })
 

@@ -73,3 +73,49 @@ export const agent = async (req, res,next) => {
   });
   }
 }
+
+export const agentStream = async (req, res, next) => {
+  try {
+    const { prompt, conversationId } = req.body;
+    const userId = req.headers['x-user-id'];
+
+    if (!prompt || !conversationId) {
+      return res.status(400).json({ error: "Prompt and conversation ID are required" })
+    }
+
+    await axios.post(`${process.env.CHAT_SERVICE_URL}/save-message`, {
+      conversationId, role: "user", content: prompt
+    })
+    await addMessage(conversationId, "user", prompt);
+
+    const result = await graph.invoke({
+      prompt, conversationId, agent: "coding", userId, streamRes: res
+    })
+
+    // SSE already ended inside codingAgent for markdown responses
+    // For CODE_GENERATION (JSON), send as a single SSE event then close
+    if (!res.writableEnded) {
+      res.setHeader("Content-Type", "text/event-stream")
+      res.setHeader("Cache-Control", "no-cache")
+      res.setHeader("Connection", "keep-alive")
+      res.write(`data: ${JSON.stringify({ text: result.aiResponse, artifacts: result.artifacts })}\n\n`)
+      res.write(`data: [DONE]\n\n`)
+      res.end()
+    }
+
+    await addMessage(conversationId, "assistant", result.aiResponse);
+    await axios.post(`${process.env.CHAT_SERVICE_URL}/save-message`, {
+      conversationId,
+      role: "assistant",
+      content: result.aiResponse,
+      artifacts: result?.artifacts
+    })
+
+  } catch (error) {
+    next(error);
+    console.error(error);
+    if (!res.writableEnded) {
+      res.status(500).json({ error: error.message })
+    }
+  }
+}
