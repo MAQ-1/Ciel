@@ -10,7 +10,7 @@ import { useSelector } from 'react-redux'
 import { setSelectedConversation } from "../redux/conversationSlice";
 import { setUserData } from "../redux/userSlice.js"
 import { User } from "lucide-react";
-import logout from '../features/Logout.js'
+import logout from '../features/logout.js'
 import { useRef } from 'react';
 import BillingDrawer from './BillingDrawer.jsx';
 import { useNavigate } from "react-router-dom";
