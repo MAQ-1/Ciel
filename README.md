@@ -1,187 +1,257 @@
+<div align="center">
+
+<img src="docs/images/logo.png" alt="Ciel" width="80" />
+
 # Ciel
 
-**One interface. Eight specialized AI agents.**
+**Multi-Agent AI Platform**
 
-Ciel is a full-stack, production-deployed AI platform that routes every user request to the right specialist instead of forcing a single model to do everything. It supports general conversation, coding assistance, live web search, PDF generation, PowerPoint generation, PDF question-answering with RAG, image generation, and image analysis — all inside a single chat interface with streaming responses, credit-based access control, and persistent conversation history.
+One conversation. Eight specialized AI agents. Powered by LangGraph.
 
----
+[**Live Demo →**](https://dwi6z47ows1mt.cloudfront.net)&nbsp;&nbsp;·&nbsp;&nbsp;[**API**](https://d27rpohugccw7u.cloudfront.net)&nbsp;&nbsp;·&nbsp;&nbsp;[**Docs**](docs/)&nbsp;&nbsp;·&nbsp;&nbsp;[**Architecture**](docs/Architecture.md)
 
-## Live Demo
+<br />
 
-| | |
-|---|---|
-| **Frontend** | [dwi6z47ows1mt.cloudfront.net](https://dwi6z47ows1mt.cloudfront.net) |
-| **Backend API** | [d27rpohugccw7u.cloudfront.net](https://d27rpohugccw7u.cloudfront.net) |
-| **Demo Video** | `<ADD_VIDEO_LINK>` |
+![Node](https://img.shields.io/badge/Node.js-22-339933?style=flat-square&logo=node.js&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)
+![LangGraph](https://img.shields.io/badge/LangGraph-1.4-FF6B35?style=flat-square)
+![AWS](https://img.shields.io/badge/AWS-ECS%20%7C%20S3%20%7C%20CloudFront-FF9900?style=flat-square&logo=amazonaws&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
-> Screenshots: see [`docs/images/`](docs/images/) — add your own after deployment.
-
----
-
-## Table of Contents
-
-- [Features](#features)
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Available Agents](#available-agents)
-- [System Workflow](#system-workflow)
-- [Installation](#installation)
-- [Environment Variables](#environment-variables)
-- [API Reference](#api-reference)
-- [Performance](#performance)
-- [Deployment](#deployment)
-- [Future Improvements](#future-improvements)
-- [Contributing](#contributing)
-- [License](#license)
+</div>
 
 ---
 
-## Features
+<div align="center">
 
-### AI Capabilities
-- **Intent-aware routing** — LangGraph router classifies every prompt and dispatches to the correct agent
-- **Chat agent** — conversational AI with Redis-backed memory (last 20 messages, 24h TTL)
-- **Coding agent** — intent-classified: generates full HTML/CSS/JS projects or returns markdown explanations, reviews, and optimizations via token streaming
-- **Vision agent** — converts a text prompt into a cinematic image via Pollinations, stores it in S3, returns a signed URL
-- **Image analyzer** — reads an uploaded image as base64 and answers questions using Gemini
-- **PDF generator** — produces structured PDFs from a prompt using pdfkit, stored in S3
-- **PPT generator** — produces multi-slide PowerPoint files from a prompt using pptxgenjs, stored in S3
-- **Search agent** — fetches live web results via Tavily and feeds them into the chat response
-- **PDF RAG** — chunks an uploaded PDF, embeds with `gemini-embedding-001`, stores in Qdrant, retrieves top-5 chunks, answers grounded questions
+<!-- Replace with actual screenshot -->
+<img src="docs/images/screenshot.png" alt="Ciel Chat Interface" width="900" />
 
-### User Experience
-- Google Sign-In via Firebase
-- Persistent conversation history with rename support
-- Markdown rendering with GFM, syntax highlighting, and copy-to-clipboard
-- Artifact panel — Monaco editor with live preview for generated HTML/CSS/JS projects
-- Image lightbox for generated and analyzed images
-- File attachment (PDF or image) from the chat composer
-- Voice input via Web Speech API
-- Credit balance display and in-app upgrade flow (Razorpay)
-- Responsive layout
+</div>
 
-### Engineering
-- SSE streaming with ALB heartbeat — eliminates 504 timeouts on long-running agents
-- LangGraph `StateGraph` orchestration with conditional routing
-- Redis session store (7-day TTL) and conversation memory cache
-- Per-user, per-agent rate limiting enforced in Redis (sliding 60s window)
-- API gateway centralizes auth, CORS, and request enrichment (`x-user-id` injection)
-- Path-based CI/CD — only changed services are rebuilt and redeployed
-- Docker layer caching via GitHub Actions GHA cache
+---
+
+## What is Ciel?
+
+Most AI assistants send every request to a single general-purpose model.
+
+Ciel routes each request to the right specialist. A coding question goes to DeepSeek. An image generation request goes through a cinematic prompt pipeline. A PDF question triggers a full RAG pipeline with Qdrant vector search. A live news query hits Tavily search before the LLM ever sees it.
+
+The router is a LangGraph `StateGraph`. Every agent is a node. The graph decides the path.
+
+---
+
+## Agents
+
+<table>
+<tr>
+<td width="50%">
+
+**🧠 Auto Router**
+LangGraph LLM router. Reads conversation history and current prompt. Selects the best agent automatically. Explicit selection always overrides.
+
+</td>
+<td width="50%">
+
+**💬 Chat**
+General conversation, Q&A, summarization, math, translation.
+`Groq` · Redis memory (20 msg / 24h TTL)
+
+</td>
+</tr>
+<tr>
+<td>
+
+**💻 Coding**
+Intent-classified. Generates full `HTML/CSS/JS` projects rendered in Monaco editor with live preview, or streams markdown for reviews, debugging, and explanations.
+`DeepSeek via OpenRouter` · SSE streaming
+
+</td>
+<td>
+
+**🎨 Vision**
+Text-to-image generation. Groq engineers a cinematic prompt → Pollinations renders → S3 stores → signed URL returned.
+`Groq + Pollinations` · SSE streaming
+
+</td>
+</tr>
+<tr>
+<td>
+
+**🖼 Image Analyzer**
+Upload any image. Ask any question. Answers grounded strictly in the image content.
+`Gemini 2.5 Flash` · Auto-routed on image upload
+
+</td>
+<td>
+
+**📄 PDF Generator**
+Prompt → structured JSON → pdfkit renders → S3 upload → download link.
+`Groq + pdfkit` · 24h signed URL
+
+</td>
+</tr>
+<tr>
+<td>
+
+**📊 PPT Generator**
+Prompt → structured JSON → pptxgenjs renders → S3 upload → `.pptx` download.
+`Groq + pptxgenjs` · 24h signed URL
+
+</td>
+<td>
+
+**🔍 Search**
+Live web results via Tavily injected into chat context before LLM responds.
+`Tavily + Groq` · Real-time grounding
+
+</td>
+</tr>
+<tr>
+<td colspan="2">
+
+**📚 PDF RAG**
+Upload a PDF. Ask questions. pdf-parse extracts text → chunked (1000/200) → embedded with `gemini-embedding-001` → stored in Qdrant → top-5 similarity search → Groq answers strictly from the document.
+Auto-routed on PDF upload.
+
+</td>
+</tr>
+</table>
 
 ---
 
 ## Architecture
 
-```
-User / Browser
-      │
-      ▼
-React Frontend (CloudFront / S3)
-      │
-      ▼
-API Gateway (Express)  ──── Redis (sessions)
-      │
-      ├── /api/auth   ──► Auth Service   ──► MongoDB  ◄── Firebase Admin
-      ├── /api/chat   ──► Chat Service   ──► MongoDB
-      ├── /api/billing ─► Billing Service ─► MongoDB  ◄── Razorpay
-      └── /api/agent  ──► Agent Service
-                              │
-                         LangGraph Router
-                              │
-              ┌───────────────┼───────────────┐
-              │               │               │
-           chat            coding          vision
-           search           pdf             ppt
-           pdfRag       imageAnalyzer
-              │               │               │
-           Groq LLM     DeepSeek (OpenRouter)  Gemini
-              │
-         ┌────┴────┐
-       Redis     Qdrant     AWS S3     Tavily
-     (memory)  (vectors)  (files)    (search)
-```
-
 ```mermaid
 flowchart TD
-  START([start]) --> ROUTER[router]
-  ROUTER --> CHAT[chat]
-  ROUTER --> CODING[coding]
-  ROUTER --> VISION[vision]
-  ROUTER --> PDF[pdf]
-  ROUTER --> PPT[ppt]
-  ROUTER --> SEARCH[search]
-  ROUTER --> PDFRAG[pdfRag]
-  ROUTER --> IMG[imageAnalyzer]
-  SEARCH --> CHAT
-  CHAT --> END([end])
-  CODING --> END
-  VISION --> END
-  PDF --> END
-  PPT --> END
-  PDFRAG --> END
-  IMG --> END
+    Browser["🌐 Browser\nReact 19 + Redux"] -->|HTTPS| CF["☁️ CloudFront CDN"]
+    CF -->|Proxy| GW["🔀 API Gateway\nExpress 5 · Auth · CORS · x-user-id"]
+    GW --> Redis1["🔴 Redis\nSessions · 7d TTL"]
+    GW -->|/api/agent| Agent["⚙️ Agent Service"]
+    GW -->|/api/auth| Auth["🔐 Auth Service\nFirebase Admin"]
+    GW -->|/api/chat| Chat["💬 Chat Service\nMongoDB"]
+    GW -->|/api/billing| Billing["💳 Billing Service\nRazorpay"]
+
+    Agent --> LG["🕸 LangGraph Router\nStateGraph"]
+
+    LG --> ChatA["chat"]
+    LG --> CodingA["coding"]
+    LG --> VisionA["vision"]
+    LG --> PDFA["pdf"]
+    LG --> PPTA["ppt"]
+    LG --> SearchA["search"]
+    LG --> RagA["pdfRag"]
+    LG --> ImgA["imageAnalyzer"]
+
+    SearchA --> ChatA
+    ChatA --> Groq["Groq LLM"]
+    CodingA --> DS["DeepSeek\nOpenRouter"]
+    VisionA --> Groq
+    PDFA --> Groq
+    PPTA --> Groq
+    ImgA --> Gemini["Gemini 2.5 Flash"]
+    RagA --> Qdrant["Qdrant\nVector DB"]
+    RagA --> Groq
+
+    VisionA --> S3["AWS S3"]
+    PDFA --> S3
+    PPTA --> S3
+
+    Agent --> Redis2["🔴 Redis\nMemory · Rate Limits"]
+    Agent --> MongoDB["🍃 MongoDB"]
 ```
+
+---
+
+## Engineering Decisions
+
+**Why LangGraph instead of a plain if/else router?**
+LangGraph models the agent pipeline as a directed graph with typed state. Adding a new agent is one `addNode` + one `addEdge`. The state flows through every node without manual passing. Conditional edges handle routing declaratively.
+
+**Why SSE instead of WebSockets?**
+The coding and vision agents can run for 60–120 seconds. AWS ALB has a hard 60s idle timeout. SSE lets the server push bytes continuously — each token chunk resets the ALB timer. A `setInterval` heartbeat every 15s acts as a safety net. WebSockets would require a separate upgrade path and NLB configuration.
+
+**Why an API Gateway service?**
+All five backend services are internal. The gateway is the only public surface. It validates the session cookie, injects `x-user-id` into every proxied request, and centralizes CORS. No service trusts the client directly.
+
+**Why Redis for session storage instead of JWTs?**
+Sessions can be invalidated instantly by deleting the Redis key. JWTs cannot be revoked without a blocklist — which is just Redis anyway. Redis also stores conversation memory (last 20 messages, 24h TTL) and per-user rate limit counters, so the infrastructure is already there.
+
+**Why Qdrant for PDF RAG instead of in-memory vectors?**
+Qdrant is a purpose-built vector database with HNSW indexing. In-memory approaches don't survive process restarts and don't scale. Qdrant runs as a separate service and can be swapped for Qdrant Cloud with one env var change.
+
+**Why ECS Fargate instead of EC2?**
+No instance management. Each service scales independently. The CI/CD pipeline fires `update-service` for all five services in parallel background processes — total deploy time is bounded by the slowest single service, not the sum.
+
+**Why path-based CI/CD?**
+`dorny/paths-filter` detects which service directories changed. A frontend-only commit never rebuilds any backend Docker image. A chat service change never triggers an agent rebuild. This keeps CI fast and ECR pull costs low.
 
 ---
 
 ## Tech Stack
 
-### Frontend
-| Package | Purpose |
-|---|---|
-| React 19 | UI framework |
-| Vite 8 | Build tool |
-| Redux Toolkit | Global state (conversations, messages, user) |
-| React Router 7 | Client-side routing |
-| Tailwind CSS 4 | Styling |
-| @monaco-editor/react | Code editor in artifact panel |
-| react-markdown + remark-gfm | Markdown rendering |
-| react-syntax-highlighter | Code block highlighting |
-| motion | Animations |
-| GSAP | Landing page animations |
-| lucide-react | Icons |
-| Firebase | Google Sign-In |
-| axios | HTTP client |
+**Frontend**
 
-### Backend
-| Package | Purpose |
-|---|---|
-| Node.js 22 | Runtime |
-| Express 5 | HTTP framework (ESM) |
-| express-http-proxy | Gateway reverse proxy |
-| morgan | Request logging |
-| multer | File upload handling |
-| cookie-parser | Session cookie parsing |
+![React](https://img.shields.io/badge/React_19-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/Vite_8-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Redux](https://img.shields.io/badge/Redux_Toolkit-764ABC?style=flat-square&logo=redux&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
+![Monaco](https://img.shields.io/badge/Monaco_Editor-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase_Auth-FFCA28?style=flat-square&logo=firebase&logoColor=black)
 
-### AI / Orchestration
-| Package | Purpose |
-|---|---|
-| @langchain/langgraph | Agent graph orchestration |
-| @langchain/groq | Groq LLM (chat, search, vision prompt, pdf, ppt, router) |
-| @langchain/openrouter (DeepSeek) | Coding agent LLM |
-| @langchain/google-genai (Gemini 2.5 Flash) | Image analysis |
-| @langchain/google-genai (gemini-embedding-001) | PDF chunk embeddings |
-| @langchain/tavily | Live web search |
-| @langchain/qdrant | Vector store for PDF RAG |
-| @langchain/textsplitters | Recursive character text splitter |
-| pdf-parse | PDF text extraction |
-| pdfkit | PDF generation |
-| pptxgenjs | PowerPoint generation |
+**Backend**
 
-### Data & Infrastructure
-| Service | Purpose |
-|---|---|
-| MongoDB | Conversations, messages, users, payments |
-| Redis | Sessions, conversation memory cache, rate limiting |
-| Qdrant | Vector embeddings for PDF RAG |
-| AWS S3 | Generated PDF, PPT, and image file storage |
-| AWS CloudFront | Frontend CDN + backend API distribution |
-| AWS ECS (Fargate) | Container hosting for all backend services |
-| AWS ECR | Docker image registry |
-| Firebase Auth | Google Sign-In |
-| Razorpay | Payment processing |
+![Node.js](https://img.shields.io/badge/Node.js_22-339933?style=flat-square&logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express_5-000000?style=flat-square&logo=express&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white)
+
+**AI / Orchestration**
+
+![LangGraph](https://img.shields.io/badge/LangGraph-FF6B35?style=flat-square)
+![Groq](https://img.shields.io/badge/Groq-F55036?style=flat-square)
+![DeepSeek](https://img.shields.io/badge/DeepSeek-4D6BFE?style=flat-square)
+![Gemini](https://img.shields.io/badge/Gemini_2.5_Flash-4285F4?style=flat-square&logo=google&logoColor=white)
+![Qdrant](https://img.shields.io/badge/Qdrant-FF3366?style=flat-square)
+![Tavily](https://img.shields.io/badge/Tavily_Search-00B4D8?style=flat-square)
+
+**Cloud / DevOps**
+
+![ECS](https://img.shields.io/badge/ECS_Fargate-FF9900?style=flat-square&logo=amazonaws&logoColor=white)
+![S3](https://img.shields.io/badge/S3-569A31?style=flat-square&logo=amazons3&logoColor=white)
+![CloudFront](https://img.shields.io/badge/CloudFront-8C4FFF?style=flat-square&logo=amazonaws&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
+
+---
+
+## System Workflow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant FE as Frontend
+    participant GW as Gateway
+    participant AG as Agent Service
+    participant LG as LangGraph
+    participant LLM as LLM
+    participant ST as Storage
+
+    U->>FE: types prompt
+    FE->>GW: POST /api/agent/chat/stream (SSE)
+    GW->>GW: validate session cookie
+    GW->>AG: proxy + inject x-user-id
+    AG->>AG: flushHeaders() → ALB timer reset
+    AG->>LG: graph.invoke(state)
+    LG->>LG: router selects agent
+    LG->>LLM: invoke / stream
+    LLM-->>AG: token chunks
+    AG-->>FE: SSE: ": generating" (heartbeat)
+    AG-->>FE: SSE: data: {text, artifacts, images}
+    AG-->>FE: SSE: data: [DONE]
+    AG->>ST: save to MongoDB + Redis
+    FE->>FE: dispatch to Redux → render
+```
 
 ---
 
@@ -189,435 +259,125 @@ flowchart TD
 
 ```
 Ciel/
-├── .github/
-│   └── workflows/
-│       └── deploy.yml              # Parallelized CI/CD — path-filtered, 5 ECS services
+├── .github/workflows/deploy.yml   # Path-filtered parallel CI/CD
 ├── backend/
-│   ├── docker-compose.yml          # Redis for local development
-│   ├── gateway/                    # Public entry point — auth middleware, proxy routing
+│   ├── gateway/                   # Auth middleware, reverse proxy, CORS
+│   ├── shared/redis/              # Shared Redis client
 │   └── services/
-│       ├── auth/                   # Firebase token verification, sessions, credit management
-│       ├── billing/                # Razorpay order creation and payment verification
-│       ├── chat/                   # Conversation and message persistence
+│       ├── auth/                  # Firebase verify, sessions, credits
+│       ├── billing/               # Razorpay orders + verification
+│       ├── chat/                  # Conversation + message persistence
 │       └── agent/
-│           ├── agents/             # One file per agent (chat, coding, vision, pdf, ppt, search, pdfRag, imageAnalyzer)
-│           ├── config/             # LLM models, embeddings, vector DB, memory, rate limits, multer, S3
-│           ├── graph/              # LangGraph state, router, compiled graph
-│           ├── util/               # S3 upload/download, PDF/PPT generators, credit deduction, message helpers
-│           ├── controller/         # agent (axios route) + agentStream (SSE route)
-│           └── route/              # POST /chat and POST /chat/stream
-├── backend/shared/
-│   └── redis/redis.js              # Shared Redis client
-└── frontend/
-    └── src/
-        ├── component/              # ChatArea, Chatinput, MessageBubble, Messagelist, Artifact, Sidebar, Nav, BillingDrawer
-        ├── features/               # API wrappers (sendMessage, createConversation, getMessages, etc.)
-        ├── pages/
-        │   ├── landing/            # Hero, Features, Pricing, FAQ, Workflow, ScrollBand, Footer
-        │   └── Home.jsx            # Authenticated chat shell
-        ├── redux/                  # conversationSlice, messageSlice, userSlice, store
-        ├── ui/                     # Reusable UI primitives (Button, Orb, ScrollVelocity)
-        └── utils/                  # axios instance, Firebase client
+│           ├── agents/            # 8 agent implementations
+│           ├── graph/             # LangGraph state, router, compiled graph
+│           ├── config/            # LLMs, embeddings, Redis, S3, rate limits
+│           └── util/              # S3, PDF/PPT generators, credit deduction
+└── frontend/src/
+    ├── component/                 # Chat UI, Artifact panel, Sidebar, Billing
+    ├── pages/landing/             # Hero, Features, Pricing, FAQ, Workflow
+    ├── redux/                     # conversationSlice, messageSlice, userSlice
+    └── features/                  # API wrappers
 ```
 
 ---
 
-## Available Agents
+## Getting Started
 
-### Auto
-The default mode. The LangGraph router reads the conversation history and the current prompt, then selects the best agent automatically. Explicit agent selection always overrides it.
-
-### Chat
-- **Purpose**: General conversation, explanations, Q&A, summarization, translation, math
-- **Input**: Text prompt
-- **Output**: Markdown or plain text
-- **LLM**: Groq (`openai/gpt-oss-120b`)
-- **Memory**: Last 20 messages from Redis, rehydrates last 6 into the model context
-
-### Coding
-- **Purpose**: Software development assistance
-- **Input**: Text prompt (optionally referencing conversation history)
-- **Output (CODE_GENERATION)**: JSON artifact with `index.html`, `style.css`, `script.js` — rendered in Monaco editor with live preview
-- **Output (other intents)**: Streamed markdown — code review, explanation, debugging, optimization, documentation
-- **LLM**: DeepSeek via OpenRouter
-- **Streaming**: Token-by-token SSE with ALB heartbeat
-
-### Vision
-- **Purpose**: AI image generation
-- **Input**: Text description
-- **Output**: Generated image rendered inline + S3 signed download URL (24h expiry)
-- **Pipeline**: Groq generates a cinematic prompt → Pollinations renders the image → uploaded to S3
-- **Streaming**: SSE route (image download + S3 upload can exceed 60s)
-
-### Image Analyzer
-- **Purpose**: Answer questions about an uploaded image
-- **Input**: Image file (any `image/*`) + text question
-- **Output**: Markdown answer grounded in the image
-- **LLM**: Gemini 2.5 Flash (multimodal)
-- **Routing**: Triggered automatically when an image file is attached
-
-### PDF Generator
-- **Purpose**: Generate a structured PDF document from a prompt
-- **Input**: Text prompt
-- **Output**: Formatted PDF stored in S3, download link in chat (24h expiry)
-- **Pipeline**: Groq generates structured JSON → pdfkit renders → S3 upload
-
-### PPT Generator
-- **Purpose**: Generate a PowerPoint presentation from a prompt
-- **Input**: Text prompt
-- **Output**: `.pptx` file stored in S3, download link in chat (24h expiry)
-- **Pipeline**: Groq generates structured JSON → pptxgenjs renders → S3 upload
-
-### Search
-- **Purpose**: Answer questions requiring current or live information
-- **Input**: Text prompt
-- **Output**: Chat response grounded in live Tavily search results
-- **Pipeline**: Tavily fetches results → results injected into chat agent context → Groq responds
-
-### PDF RAG
-- **Purpose**: Answer questions about an uploaded PDF
-- **Input**: PDF file + text question
-- **Output**: Answer grounded strictly in the PDF content
-- **Pipeline**: pdf-parse extracts text → RecursiveCharacterTextSplitter (1000 chars / 200 overlap) → `gemini-embedding-001` embeds chunks → stored in Qdrant → top-5 similarity search → Groq answers
-- **Routing**: Triggered automatically when a PDF file is attached
-
----
-
-## System Workflow
-
-```
-User types a prompt
-        │
-        ▼
-Chatinput.jsx — selects transport:
-  coding / auto / vision → SSE fetch (/api/agent/chat/stream)
-  all others             → axios POST (/api/agent/chat)
-        │
-        ▼
-Gateway — validates session cookie → injects x-user-id → proxies request
-        │
-        ▼
-agentStream controller:
-  1. flushHeaders() immediately (resets ALB 60s idle timer)
-  2. setInterval heartbeat every 15s (safety net)
-  3. saves user message to MongoDB + Redis
-  4. graph.invoke({ prompt, conversationId, agent, userId, streamRes })
-        │
-        ▼
-LangGraph Router:
-  explicit agent?  → pass through
-  PDF attached?    → pdfRag
-  image attached?  → imageAnalyzer
-  otherwise        → LLM classifies intent → selects agent
-        │
-        ▼
-Selected Agent executes
-  (LLM call / S3 upload / Qdrant search / Tavily fetch)
-        │
-        ▼
-agentStream controller:
-  sends final SSE event: { text, artifacts, images }
-  sends [DONE]
-  saves assistant message to MongoDB + Redis
-        │
-        ▼
-Frontend SSE parser:
-  extracts text, artifacts, images
-  dispatches addMessage + setArtifacts to Redux
-        │
-        ▼
-MessageBubble renders text + images
-Artifact panel renders code files + live preview
-```
-
----
-
-## Installation
-
-### Prerequisites
-
-- Node.js 18+
-- Docker (for Redis)
-- MongoDB connection string
-- Redis instance
-- Qdrant instance
-- Firebase project with Google Auth enabled
-- AWS account (S3 bucket + IAM credentials)
-- Razorpay account
-- Groq API key
-- OpenRouter API key (DeepSeek access)
-- Google Generative AI API key
-- Tavily API key
-
-### 1. Clone
+**Prerequisites:** Node.js 18+, Docker, MongoDB, Redis, Qdrant, Firebase project, AWS account, Groq / OpenRouter / Google AI / Tavily / Razorpay API keys.
 
 ```bash
-git clone <your-repo-url>
-cd Ciel
+# 1. Clone
+git clone <your-repo-url> && cd Ciel
+
+# 2. Start Redis locally
+cd backend && docker compose up -d && cd ..
+
+# 3. Install all services
+for dir in backend/gateway backend/services/auth backend/services/billing \
+           backend/services/chat backend/services/agent frontend; do
+  (cd $dir && npm install)
+done
+
+# 4. Add .env files — see docs/Environment.md
+
+# 5. Run (six terminals)
+cd backend/gateway          && npm run dev   # :3000
+cd backend/services/auth    && npm run dev   # :3001
+cd backend/services/chat    && npm run dev   # :3002
+cd backend/services/billing && npm run dev   # :3004
+cd backend/services/agent   && npm run dev   # :3003
+cd frontend                 && npm run dev   # :5173
 ```
 
-### 2. Start Redis
-
-```bash
-cd backend
-docker compose up -d
-```
-
-### 3. Install dependencies
-
-```bash
-cd backend/gateway          && npm install && cd ../..
-cd backend/services/auth    && npm install && cd ../../..
-cd backend/services/billing && npm install && cd ../../..
-cd backend/services/chat    && npm install && cd ../../..
-cd backend/services/agent   && npm install && cd ../../..
-cd frontend                 && npm install && cd ..
-```
-
-### 4. Add environment files
-
-See [Environment Variables](#environment-variables) below.
-
-### 5. Run all services
-
-Open six terminals:
-
-```bash
-# Terminal 1
-cd backend/gateway && npm run dev
-
-# Terminal 2
-cd backend/services/auth && npm run dev
-
-# Terminal 3
-cd backend/services/chat && npm run dev
-
-# Terminal 4
-cd backend/services/billing && npm run dev
-
-# Terminal 5
-cd backend/services/agent && npm run dev
-
-# Terminal 6
-cd frontend && npm run dev
-```
-
-Frontend: `http://localhost:5173`  
-Gateway: `http://localhost:3000`
-
----
-
-## Environment Variables
-
-### `backend/gateway/.env`
-
-| Variable | Example | Description |
-|---|---|---|
-| `PORT` | `3000` | Gateway port |
-| `FRONTEND_URL` | `http://localhost:5173` | Allowed CORS origin |
-| `AUTH_SERVICE_URL` | `http://localhost:3001` | Auth service base URL |
-| `CHAT_SERVICE_URL` | `http://localhost:3002` | Chat service base URL |
-| `AGENT_SERVICE_URL` | `http://localhost:3003` | Agent service base URL |
-| `BILLING_SERVICE_URL` | `http://localhost:3004` | Billing service base URL |
-
-### `backend/services/auth/.env`
-
-| Variable | Example | Description |
-|---|---|---|
-| `PORT` | `3001` | Auth service port |
-| `MONGO_URI` | `mongodb://127.0.0.1:27017/ciel-auth` | MongoDB connection |
-| `REDIS_URL` | `redis://localhost:8081` | Redis connection |
-
-### `backend/services/chat/.env`
-
-| Variable | Example | Description |
-|---|---|---|
-| `PORT` | `3002` | Chat service port |
-| `MONGO_URI` | `mongodb://127.0.0.1:27017/ciel-chat` | MongoDB connection |
-
-### `backend/services/billing/.env`
-
-| Variable | Example | Description |
-|---|---|---|
-| `PORT` | `3004` | Billing service port |
-| `MONGO_URI` | `mongodb://127.0.0.1:27017/ciel-billing` | MongoDB connection |
-| `AUTH_SERVICE_URL` | `http://localhost:3001` | Auth service base URL |
-| `RAZORPAY_KEY_ID` | `rzp_test_...` | Razorpay key ID |
-| `RAZORPAY_KEY_SECRET` | `<secret>` | Razorpay key secret |
-
-### `backend/services/agent/.env`
-
-| Variable | Example | Description |
-|---|---|---|
-| `PORT` | `3003` | Agent service port |
-| `MONGO_URI` | `mongodb://127.0.0.1:27017/ciel-agent` | MongoDB connection |
-| `REDIS_URL` | `redis://localhost:8081` | Redis connection |
-| `CHAT_SERVICE_URL` | `http://localhost:3002` | Chat service base URL |
-| `AUTH_SERVICE_URL` | `http://localhost:3001` | Auth service base URL |
-| `AWS_REGION` | `ap-south-1` | S3 region |
-| `AWS_ACCESS_KEY_ID` | `<key>` | IAM access key |
-| `AWS_SECRET_ACCESS_KEY` | `<secret>` | IAM secret key |
-| `AWS_BUCKET_NAME` | `your-bucket` | S3 bucket name |
-| `GROQ_API_KEY` | `gsk_...` | Groq API key |
-| `GOOGLE_API_KEY` | `AIza...` | Google Generative AI key |
-| `QDRANT_URL` | `http://localhost:6333` | Qdrant instance URL |
-| `QDRANT_API_KEY` | `<key>` | Qdrant API key |
-| `TAVILY_API_KEY` | `tvly-...` | Tavily search API key |
-
-### `frontend/.env`
-
-| Variable | Example | Description |
-|---|---|---|
-| `VITE_SERVER_URL` | `http://localhost:3000` | Gateway base URL |
-| `VITE_FIREBASE_API_KEY` | `AIza...` | Firebase web API key |
-| `VITE_RAZORPAY_KEY_ID` | `rzp_test_...` | Razorpay key ID (client) |
-
----
-
-## API Reference
-
-All routes go through the gateway at port `3000`. Protected routes require a valid `session` cookie.
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `GET` | `/` | No | Gateway health check |
-| `GET` | `/api/me` | Yes | Return current session user |
-| `POST` | `/api/auth/login` | No | Verify Firebase token, create session |
-| `GET` | `/api/auth/logout` | Yes | Destroy session |
-| `POST` | `/api/auth/update-plan` | Internal | Update user plan and credits |
-| `POST` | `/api/auth/deduct-credits` | Internal | Deduct credits for an agent call |
-| `GET` | `/api/chat/create-conversation` | Yes | Create a new conversation |
-| `GET` | `/api/chat/get-conversations` | Yes | List all conversations for the user |
-| `POST` | `/api/chat/update-conversation` | Yes | Rename a conversation |
-| `POST` | `/api/chat/save-message` | Yes | Persist a message with optional artifacts and images |
-| `GET` | `/api/chat/get-messages/:conversationId` | Yes | Load messages for a conversation |
-| `POST` | `/api/agent/chat` | Yes | Blocking agent route (multipart — for file uploads) |
-| `POST` | `/api/agent/chat/stream` | Yes | SSE streaming route (JSON — coding, vision, auto) |
-| `POST` | `/api/billing/create-order` | Yes | Create a Razorpay order |
-| `POST` | `/api/billing/verify-payment` | Yes | Verify payment and credit the account |
-
-### Credit costs per agent call
-
-| Agent | Credits |
-|---|---|
-| Chat | 1 |
-| Search | 5 |
-| Coding | 10 |
-| PDF | 10 |
-| PPT | 10 |
-| Vision | 10 |
-
-### Rate limits (per user, per 60s window)
-
-| Agent | Requests / min |
-|---|---|
-| Chat | 20 |
-| Coding | 5 |
-| Search | 5 |
-| PDF | 3 |
-| PPT | 2 |
-| Vision | 3 |
-
----
-
-## Performance
-
-| Area | Implementation |
-|---|---|
-| SSE streaming | Coding, vision, and auto agents stream tokens continuously, preventing ALB 504 timeouts |
-| ALB heartbeat | `setInterval` writes `: heartbeat\n\n` every 15s as a safety net |
-| Redis memory | Conversation messages cached with 24h TTL — avoids repeated MongoDB reads |
-| Context window | Only the last 6 messages are injected into the LLM prompt |
-| Rate limiting | Per-user, per-agent counters in Redis with a 60s sliding window |
-| S3 signed URLs | Generated with a 24h expiry for PDF, PPT, and image artifacts |
-| Docker layer cache | `type=gha` cache in CI — npm install layer reused when only source files change |
-| Path-based CI | `dorny/paths-filter` skips unchanged services — only modified services rebuild and redeploy |
-| Parallel ECS deploy | All 5 ECS `update-service` calls fire as background processes simultaneously |
+> Full environment variable reference → [`docs/Environment.md`](docs/Environment.md)
+>
+> Full API reference → [`docs/API.md`](docs/API.md)
 
 ---
 
 ## Deployment
 
-The project is deployed on AWS.
-
 | Layer | Service |
 |---|---|
-| Frontend | S3 static hosting + CloudFront CDN |
-| Backend services | ECS Fargate (one task per service) |
-| Container registry | ECR (one repository per service) |
-| Database | MongoDB Atlas (external) |
-| Cache | Redis (external or ElastiCache) |
-| Vector DB | Qdrant Cloud (external) |
-| File storage | S3 |
+| Frontend | S3 + CloudFront |
+| Backend | ECS Fargate — one task per service |
+| Registry | ECR — one repo per service |
+| Database | MongoDB Atlas |
+| Cache | Redis (ElastiCache or external) |
+| Vectors | Qdrant Cloud |
+| Files | S3 |
 
-### CI/CD
+Push to `main` → GitHub Actions detects changed paths → builds only affected services in parallel → deploys all 5 ECS services simultaneously.
 
-Push to `main` triggers `.github/workflows/deploy.yml`:
-
-1. `changes` job detects which paths changed using `dorny/paths-filter`
-2. Five backend build jobs run in parallel — each only runs if its path changed
-3. Frontend build + S3 sync + CloudFront invalidation runs in parallel with backend builds
-4. `deploy-backend` waits for all build jobs, then fires all five ECS `update-service` calls simultaneously
-
-No manual deployment steps are required after the initial infrastructure setup.
-
-### Required GitHub Secrets
-
-```
-AWS_REGION
-AWS_ACCOUNT_ID
-AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY
-ECS_CLUSTER
-GATEWAY_SERVICE
-AGENT_SERVICE
-AUTH_SERVICE
-CHAT_SERVICE
-BILLING_SERVICE
-S3_BUCKET_NAME
-CLOUDFRONT_DISTRIBUTION_ID
-VITE_FIREBASE_API_KEY
-VITE_RAZORPAY_KEY_ID
-VITE_SERVER_URL
-```
+Full deployment guide → [`docs/Deployment.md`](docs/Deployment.md)
 
 ---
 
-## Future Improvements
+## Performance
 
-- [ ] Streaming support for PDF and PPT agents (currently blocking)
-- [ ] Persistent Qdrant collections per user for multi-session PDF RAG
-- [ ] WebSocket upgrade path for lower-latency streaming
-- [ ] Conversation search and filtering in the sidebar
-- [ ] Multi-file upload support in the composer
-- [ ] Token usage and cost tracking per conversation
-- [ ] Admin dashboard for usage metrics
-- [ ] Automated integration tests for gateway and agent routes
+| Optimization | Detail |
+|---|---|
+| SSE + ALB heartbeat | Token chunks reset ALB's 60s idle timer. `setInterval` every 15s as safety net. |
+| Redis conversation cache | Last 20 messages cached per conversation, 24h TTL. No MongoDB read on every turn. |
+| Context window trimming | Only last 6 messages injected into LLM prompt. Keeps latency and cost low. |
+| Per-user rate limiting | Redis sliding window counters per agent. Enforced before any LLM call. |
+| Docker layer cache | `type=gha` GHA cache. `npm install` layer reused when only source files change. |
+| Path-based CI | `dorny/paths-filter` — unchanged services never rebuild or redeploy. |
+| Parallel ECS deploy | All 5 `update-service` calls fire as bash background processes simultaneously. |
+| S3 signed URLs | 24h expiry. No public bucket. Files served directly from S3, not through the API. |
+
+---
+
+## Roadmap
+
+- [ ] Streaming for PDF and PPT agents
+- [ ] Persistent Qdrant collections per user (multi-session PDF RAG)
+- [ ] WebSocket upgrade path
+- [ ] Conversation search in sidebar
+- [ ] Multi-file upload
+- [ ] Token usage tracking per conversation
+- [ ] Admin usage dashboard
+- [ ] Integration test suite for gateway and agent routes
 
 ---
 
 ## Contributing
 
-1. Fork the repository and create a feature branch from `main`.
-2. Keep changes aligned with the existing ESM + Express + React architecture.
-3. Preserve service boundaries — gateway, auth, chat, billing, and agent logic must remain separated.
-4. Use the existing Redux slices and feature modules instead of inlining API calls inside components.
-5. If you add a new agent, update `graph.js`, `router.js`, `state.js`, `llmModels.js`, `agentlimit.js`, and this README together.
-6. Run `npm run lint` and `npm run build` in the frontend before opening a pull request.
-7. Describe any new environment variables or external service dependencies in your PR description.
+1. Branch from `main`.
+2. Preserve service boundaries — gateway, auth, chat, billing, agent stay separated.
+3. New agent? Update `graph.js`, `router.js`, `state.js`, `llmModels.js`, `agentlimit.js`, and this README.
+4. `npm run lint && npm run build` before opening a PR.
 
 ---
 
 ## License
 
-MIT
+MIT © [TANMAY KUMAR]
 
 ---
 
-## Contact
+<div align="center">
 
-| | |
-|---|---|
-| GitHub | `<ADD_GITHUB_PROFILE_URL>` |
-| LinkedIn | `<ADD_LINKEDIN_URL>` |
-| Email | `<ADD_EMAIL>` |
+[Live Demo](https://dwi6z47ows1mt.cloudfront.net) · [API](https://d27rpohugccw7u.cloudfront.net) · [Docs](docs/) · [Report Bug](../../issues) · [Request Feature](../../issues)
+
+</div>
