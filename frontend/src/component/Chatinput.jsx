@@ -90,7 +90,7 @@ function Chatinput() {
     const reader = res.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ""
-    let result = { text: null, artifacts: null, error: null }
+    let result = { text: null, artifacts: null, images: null, error: null }
 
     while (true) {
       const { done, value } = await reader.read()
@@ -117,6 +117,7 @@ function Chatinput() {
           // Final event from agentStream controller
           if (parsed.text !== undefined) result.text = parsed.text
           if (parsed.artifacts !== undefined) result.artifacts = parsed.artifacts
+          if (parsed.images !== undefined) result.images = parsed.images
         } catch {
           // malformed chunk — ignore
         }
