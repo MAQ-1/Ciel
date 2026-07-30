@@ -112,13 +112,26 @@ Current User Request:
 ${state.prompt}
         `
 
-            const res = await llm.invoke(prompt)
+            // Stream the response token by token.
+            // Each chunk write resets ALB's 60s idle timeout — this is the fix for 504.
+            // We accumulate the full JSON string and parse it once streaming is complete.
+            const codeStream = await llm.stream(prompt)
+
+            let rawContent = ""
+            for await (const chunk of codeStream) {
+                rawContent += chunk.content
+                // SSE comment — invisible to frontend parser, but sends bytes to ALB
+                // preventing the idle timeout from firing during long generations
+                if (state.streamRes && !state.streamRes.writableEnded) {
+                    state.streamRes.write(": generating\n\n")
+                }
+            }
 
             console.log("============== RAW MODEL OUTPUT ==============");
-            console.log(res.content);
+            console.log(rawContent);
             console.log("==============================================");
 
-            const cleaned = res.content
+            const cleaned = rawContent
                 .replace(/^```json\s*/i, "")
                 .replace(/^```\s*/i, "")
                 .replace(/\s*```$/, "")
@@ -135,7 +148,6 @@ ${state.prompt}
                         type: "Project",
                         files: data.files || [],
                         title: state.prompt
-
                     }
                 ]
             }
@@ -171,9 +183,6 @@ ${state.prompt}
 
         let data = ""
         if (state.streamRes) {
-            state.streamRes.setHeader("Content-Type", "text/event-stream")
-            state.streamRes.setHeader("Cache-Control", "no-cache")
-            state.streamRes.setHeader("Connection", "keep-alive")
             for await (const chunk of stream) {
                 const text = chunk.content
                 data += text

@@ -75,13 +75,29 @@ export const agent = async (req, res,next) => {
 }
 
 export const agentStream = async (req, res, next) => {
+  let heartbeat = null
   try {
-    const { prompt, conversationId } = req.body;
+    const { prompt, conversationId, agent: agentName } = req.body;
     const userId = req.headers['x-user-id'];
 
     if (!prompt || !conversationId) {
       return res.status(400).json({ error: "Prompt and conversation ID are required" })
     }
+
+    // CRITICAL: flush headers immediately as the very first action.
+    // This sends bytes to ALB right away, resetting its 60s idle timer
+    // before any async work (LLM, DB) begins.
+    res.setHeader("Content-Type", "text/event-stream")
+    res.setHeader("Cache-Control", "no-cache")
+    res.setHeader("Connection", "keep-alive")
+    res.setHeader("X-Accel-Buffering", "no")
+    res.flushHeaders()
+
+    // Safety-net heartbeat every 15s in case a layer between
+    // the agent and ALB buffers the per-chunk SSE comments
+    heartbeat = setInterval(() => {
+      if (!res.writableEnded) res.write(": heartbeat\n\n")
+    }, 15000)
 
     await axios.post(`${process.env.CHAT_SERVICE_URL}/save-message`, {
       conversationId, role: "user", content: prompt
@@ -89,16 +105,19 @@ export const agentStream = async (req, res, next) => {
     await addMessage(conversationId, "user", prompt);
 
     const result = await graph.invoke({
-      prompt, conversationId, agent: "coding", userId, streamRes: res
+      prompt, conversationId, agent: agentName || "coding", userId, streamRes: res
     })
 
-    // SSE already ended inside codingAgent for markdown responses
-    // For CODE_GENERATION (JSON), send as a single SSE event then close
+    clearInterval(heartbeat)
+
+    // Markdown path: codingAgent already wrote [DONE] and ended the response.
+    // CODE_GENERATION path: codingAgent returned artifacts, we send them now.
     if (!res.writableEnded) {
-      res.setHeader("Content-Type", "text/event-stream")
-      res.setHeader("Cache-Control", "no-cache")
-      res.setHeader("Connection", "keep-alive")
-      res.write(`data: ${JSON.stringify({ text: result.aiResponse, artifacts: result.artifacts })}\n\n`)
+      res.write(`data: ${JSON.stringify({
+        text: result.aiResponse,
+        artifacts: result.artifacts || [],
+        images: result.images || []
+      })}\n\n`)
       res.write(`data: [DONE]\n\n`)
       res.end()
     }
@@ -108,14 +127,17 @@ export const agentStream = async (req, res, next) => {
       conversationId,
       role: "assistant",
       content: result.aiResponse,
+      images: result?.images,
       artifacts: result?.artifacts
     })
 
   } catch (error) {
-    next(error);
     console.error(error);
+    if (heartbeat) clearInterval(heartbeat)
     if (!res.writableEnded) {
-      res.status(500).json({ error: error.message })
+      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`)
+      res.write(`data: [DONE]\n\n`)
+      res.end()
     }
   }
 }
