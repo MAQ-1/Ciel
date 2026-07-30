@@ -1,4 +1,4 @@
-import { motion, useMotionValue } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
@@ -7,8 +7,18 @@ import Orb from '../../ui/Orb';
 const Hero = () => {
     const navigate = useNavigate();
     const containerRef = useRef(null);
+    const ctaRef = useRef(null);
+    const prefersReducedMotion = useReducedMotion();
+
+    // Normalized (-1 to 1) cursor position relative to the hero container.
+    // Drives the Orb's parallax tilt and (optionally) the ambient gradients.
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
+
+    // Raw pixel offset used only for the CTA's magnetic pull, reset to 0
+    // whenever the cursor is outside the button's hit area.
+    const ctaX = useMotionValue(0);
+    const ctaY = useMotionValue(0);
 
     useEffect(() => {
         const handleMouseMove = (e) => {
@@ -20,11 +30,56 @@ const Hero = () => {
             const y = (e.clientY - centerY) / (rect.height / 2);
             mouseX.set(x);
             mouseY.set(y);
+
+            // Magnetic CTA — only pulls while the cursor is within a small
+            // padded area around the button; resets to 0 otherwise.
+            if (ctaRef.current && !prefersReducedMotion) {
+                const btnRect = ctaRef.current.getBoundingClientRect();
+                const pad = 24; // px hit-area padding beyond the button's own bounds
+                const withinX = e.clientX > btnRect.left - pad && e.clientX < btnRect.right + pad;
+                const withinY = e.clientY > btnRect.top - pad && e.clientY < btnRect.bottom + pad;
+
+                if (withinX && withinY) {
+                    const btnCenterX = btnRect.left + btnRect.width / 2;
+                    const btnCenterY = btnRect.top + btnRect.height / 2;
+                    const dx = e.clientX - btnCenterX;
+                    const dy = e.clientY - btnCenterY;
+                    const maxPull = 6; // px — deliberately small, this is a compact button, not display type
+                    ctaX.set(Math.max(-maxPull, Math.min(maxPull, dx * 0.25)));
+                    ctaY.set(Math.max(-maxPull, Math.min(maxPull, dy * 0.25)));
+                } else {
+                    ctaX.set(0);
+                    ctaY.set(0);
+                }
+            }
+        };
+
+        const handleMouseLeaveWindow = () => {
+            // Cursor left the viewport entirely — settle everything back to neutral.
+            mouseX.set(0);
+            mouseY.set(0);
+            ctaX.set(0);
+            ctaY.set(0);
         };
 
         window.addEventListener("mousemove", handleMouseMove);
-        return () => window.removeEventListener("mousemove", handleMouseMove);
-    }, [mouseX, mouseY]);
+        document.addEventListener("mouseleave", handleMouseLeaveWindow);
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            document.removeEventListener("mouseleave", handleMouseLeaveWindow);
+        };
+    }, [mouseX, mouseY, ctaX, ctaY, prefersReducedMotion]);
+
+    // Orb parallax tilt — spring-smoothed so it trails the cursor rather than
+    // snapping to it, which is what makes it read as "alive" instead of mechanical.
+    const orbRotateX = useTransform(mouseY, [-1, 1], [6, -6]);
+    const orbRotateY = useTransform(mouseX, [-1, 1], [-6, 6]);
+    const orbSpringRotateX = useSpring(orbRotateX, { stiffness: 80, damping: 20, mass: 0.5 });
+    const orbSpringRotateY = useSpring(orbRotateY, { stiffness: 80, damping: 20, mass: 0.5 });
+
+    // CTA magnetic pull — a snappier, tighter spring appropriate for a small control.
+    const ctaSpringX = useSpring(ctaX, { stiffness: 150, damping: 15 });
+    const ctaSpringY = useSpring(ctaY, { stiffness: 150, damping: 15 });
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -173,6 +228,12 @@ const Hero = () => {
                         className="mt-10 flex flex-wrap items-center gap-4"
                     >
                         <motion.button
+                            ref={ctaRef}
+                            style={
+                                prefersReducedMotion
+                                    ? undefined
+                                    : { x: ctaSpringX, y: ctaSpringY }
+                            }
                             whileHover={{
                                 scale: 1.02,
                                 y: -1,
@@ -206,9 +267,24 @@ const Hero = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
                     className="relative mt-16 flex h-[380px] w-full items-center justify-center lg:mt-0 lg:h-[520px] lg:w-[520px]"
+                    style={{ perspective: 800 }}
                 >
-                    {/* The Living Intelligence Orb */}
-                    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                    {/* Cursor-reactive tilt wrapper — reads mouseX/mouseY, never
+                        touches the Orb component's own internal props. */}
+                    <motion.div
+                        style={
+                            prefersReducedMotion
+                                ? { width: '100%', height: '100%', position: 'relative' }
+                                : {
+                                      width: '100%',
+                                      height: '100%',
+                                      position: 'relative',
+                                      rotateX: orbSpringRotateX,
+                                      rotateY: orbSpringRotateY,
+                                      transformStyle: 'preserve-3d',
+                                  }
+                        }
+                    >
                         <Orb
                             hoverIntensity={2}
                             rotateOnHover
@@ -216,7 +292,7 @@ const Hero = () => {
                             forceHoverState={false}
                             backgroundColor="#000000"
                         />
-                    </div>
+                    </motion.div>
                 </motion.div>
             </div>
         </section>
